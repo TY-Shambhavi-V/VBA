@@ -1,0 +1,96 @@
+:root {
+  /**
+    Theme 관련 정보
+  **/
+  
+
+
+  /* --t1: #ffffff;
+  --t2: #fafafa;
+  --t3: #f5f5f5;
+  --t4: #ebebeb;
+  --t5: #e9eefb;
+  --t6: #e2e6f1;
+  --t7: #e0e0e0;
+  --t8: #d9e2f6;  
+  --t9: #c5c5c5;
+  --t10: #c0cdec;
+  --t11: #b5c2e3;
+  --t12: #b4b4b4;
+  --t13: #96a6cd;
+  --t14: #90a5dc;
+  --t15: #7f7f7f;
+  --t16: #5a5a5a;
+  --t17: #4c73d5;  
+  --t18: #3e62bb;
+  --t19: #3554a3;
+  --t20: #335095; 
+  --t21: #333333; */
+  /* --t22: rgba(97, 130, 214, 0.3);
+  --t23: rgba(100, 255, 0, 0.4); */
+
+  --t1: #ffffff;
+  --t2: #f2f2f2;
+  --t3: #f0f0f0;
+  --t4: #999999;
+  --t5: #868686;
+  --t6: #7396e9;
+  --t7: #626262;  
+  --t8: #454545;
+  --t9: #414141;
+  --t10: #393939;  
+  --t11: #2b2b2b;  
+  --t12: #242424; /*default frame */
+  --t13: #1e1e1e;
+  --t14: #444444;
+  
+
+  
+  /*윈도우 Color*/
+  --defualt-window-frame: var(--t12);
+
+  /*버튼 Color*/
+  --defualt-button-bg: var(--t11);
+  --defualt-button-text: var(--t2);
+  --defualt-button-border: var(--t7);
+
+  --disable-button-opacity: 0.38;
+  --disable-button-bg: var(--t11);
+  --disable-button-text: var(--t2);
+  --disable-button-border: var(--t7);
+
+  --hover-button-bg: var(--t10);
+  --hover-button-text: var(--t1);
+  --hover-button-border: var(--t7);
+
+  --push-button-bg: var(--t13);
+  --push-button-text: var(--t1);
+  --push-button-border: var(--t7);
+
+  --check-button-bg: var(--t8);
+  --check-button-text: var(--t1);
+  --check-button-border: var(--t7);
+
+  /*check 버튼 Color*/
+  --defualt-checkbutton-bg: var(--t11);
+  --defualt-checkbutton-text: var(--t2);
+  --defualt-checkbutton-border: var(--t7);
+
+  --disable-checkbutton-opacity: 0.38;
+  --disable-checkbutton-bg: var(--t11);
+  --disable-checkbutton-text: var(--t2);
+  --disable-checkbutton-border: var(--t7);
+
+  --hover-checkbutton-bg: var(--t10);
+  --hover-checkbutton-text: var(--t1);
+  --hover-checkbutton-border: var(--t7);
+
+  --push-checkbutton-bg: var(--t13);
+  --push-checkbutton-text: var(--t1);
+  --push-checkbutton-border: var(--t7);
+
+  --check-checkbutton-bg: var(--t8);
+  --check-checkbutton-text: var(--t1);
+  --check-checkbutton-border: var(--t7);
+
+}

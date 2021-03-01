@@ -1,0 +1,56 @@
+:root {
+  /**
+    Theme 관련 정보
+  **/
+  --t1: #ffffff;
+  --t2: #fafafa;
+  --t3: #f5f5f5;
+  --t4: #ebebeb;
+  --t5: #e9eefb;
+  --t6: #e2e6f1;
+  --t7: #e0e0e0;
+  --t8: #d9e2f6;  
+  --t9: #c5c5c5;
+  --t10: #c0cdec;
+  --t11: #b5c2e3;
+  --t12: #b4b4b4;
+  --t13: #96a6cd;
+  --t14: #90a5dc;
+  --t15: #7f7f7f;
+  --t16: #5a5a5a;
+  --t17: #4c73d5;  
+  --t18: #3e62bb;
+  --t19: #3554a3;
+  --t20: #335095; 
+  --t21: #333333;
+  --t22: #d0d0d0;
+  --t22: #cccccc;
+  /* --t22: rgba(97, 130, 214, 0.3);
+  --t23: rgba(100, 255, 0, 0.4); */
+  
+  /*윈도우 Color*/
+  --defualt-window-frame: var(--t2);
+
+  /*버튼 Color*/
+  --defualt-button-bg: var(--t1);
+  --defualt-button-text: var(--t21);
+  --defualt-button-border: var(--t9);
+
+  --disable-button-opacity: 0.4;
+  --disable-button-bg: var(--t2);
+  --disable-button-text: var(--t15);
+  --disable-button-border: var(--t2);
+
+  --hover-button-bg: var(--t5);
+  --hover-button-text: var(--t19);
+  --hover-button-border: var(--t14);
+
+  --push-button-bg: var(--t10);
+  --push-button-text: var(--t19);
+  --push-button-border: var(--t14);
+
+  --check-button-bg: var(--t8);
+  --check-button-text: var(--t19);
+  --check-button-border: var(--t22);
+
+}
