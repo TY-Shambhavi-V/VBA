@@ -988,12 +988,12 @@ export default class FDComboBox extends Mixins(FdControlVue) {
         this.comboEle.style.backgroundColor = ''
       }
     }
-    if (e.key === 'Delete' && selStart !== selEnd && selEnd === this.textareaRef.value.length) {
-      this.textareaRef.value = this.textareaRef.value.slice(0, this.start)
-      this.updateModel(this.textareaRef.value)
-      this.selection(selStart, selStart)
-      this.comboEle.style.backgroundColor = ''
-    }
+    // if (e.key === 'Delete' && selStart !== selEnd && selEnd === this.textareaRef.value.length) {
+    //   this.textareaRef.value = this.textareaRef.value.slice(0, this.start)
+    //   this.updateModel(this.textareaRef.value)
+    //   this.selection(selStart, selStart)
+    //   this.comboEle.style.backgroundColor = ''
+    // }
     if (e.key === 'Delete' && selStart !== selEnd) {
       // this.textareaRef.value = this.textareaRef.value.slice(this.start, selStart) + this.textareaRef.value.slice(selEnd)
       this.updateModel(this.textareaRef.value)
