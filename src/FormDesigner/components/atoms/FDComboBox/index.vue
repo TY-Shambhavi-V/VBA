@@ -1015,6 +1015,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
           }
           comboDiv.style.backgroundColor = 'rgb(59, 122, 231)'
           this.comboEle = comboDiv
+          this.selection(this.start, this.textareaRef.value.length, 1)
           break
         }
       }
@@ -1045,7 +1046,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
         this.selection(this.selStart, this.selStart, 1)
         this.comboEle.style.backgroundColor = ''
       } else if (this.selStart === this.prevLen) {
-        this.textareaRef.value = this.textareaRef.value.slice(0, this.selStart) + this.textareaRef.value.slice(this.selEnd)
+        this.textareaRef.value = this.textareaRef.value.slice(0, this.selStart) + this.textareaRef.value.slice(this.textareaRef.selectionEnd)
         this.updateModel(this.textareaRef.value)
         this.selection(this.selStart, this.selStart, 1)
         this.comboEle.style.backgroundColor = ''
@@ -1088,8 +1089,6 @@ export default class FDComboBox extends Mixins(FdControlVue) {
         }
         comboDiv.style.backgroundColor = 'rgb(59, 122, 231)'
       }
-    } else if (!e.shiftKey && e.key !== 'Shift' && e.key !== 'Enter' && this.textareaRef.selectionStart !== 0) {
-      this.selection(this.start, this.textareaRef.value.length, 1)
     }
     if (e.key === 'Enter' && !e.shiftKey) {
       this.start = this.beforeEnter
@@ -1098,9 +1097,6 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     this.prevLen = this.selStart
     if (this.textareaRef.value === '') {
       this.flag = 0
-    }
-    if (this.textareaRef.value.length === 1) {
-      this.selection(1, 1, 1)
     }
   }
 
