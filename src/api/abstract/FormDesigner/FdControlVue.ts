@@ -1007,6 +1007,9 @@ handleMultiSelect (e: MouseEvent) {
   a.style.backgroundColor = ''
   this.updateDataModel({ propertyName: 'Value', value: a.innerText })
   this.updateDataModel({ propertyName: 'Text', value: a.innerText })
+  if (!e.shiftKey) {
+    this.textareaRef.setSelectionRange(0, a.innerText.length, 'forward')
+  }
   a.style.backgroundColor = 'rgb(59, 122, 231)'
 }
 /**

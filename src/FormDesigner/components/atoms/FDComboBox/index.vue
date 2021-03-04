@@ -332,6 +332,9 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   shiftKey: number = 0;
   selStart: number = 0;
   selEnd: number = 0;
+  arrowUp: number = 0;
+  shiftStart: number = 0;
+  shiftFlag: number = 0;
 
   get innerComboBoxStyleObj () {
     return {
@@ -875,6 +878,8 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   }
 
   matchFirst (e: KeyboardEvent) {
+    this.selStart = this.textareaRef.selectionStart
+    this.selEnd = this.textareaRef.selectionEnd
     for (let i = 0; i < this.tempArray.length; i++) {
       if (this.tempArray[i][0][0] === this.textareaRef.value[0]) {
         this.items.push(this.tempArray[i][0])
@@ -897,10 +902,9 @@ export default class FDComboBox extends Mixins(FdControlVue) {
             propertyName: 'Text',
             value: this.textareaRef.value
           })
-          const a = this.$refs.textareaRef as HTMLInputElement
-          this.startPos = this.endPos = Number(a.selectionStart)
+          this.startPos = this.endPos = this.textareaRef.selectionStart
         }
-        if (this.tempArray[i][0].includes(this.textareaRef.value)) {
+        if (this.tempArray[i][0].includes(this.textareaRef.value) && this.ele !== 0 && e.key !== 'ArrowUp') {
           this.textareaRef.value = this.items[this.count - 1]
           this.updateDataModel({
             propertyName: 'Text',
@@ -919,20 +923,69 @@ export default class FDComboBox extends Mixins(FdControlVue) {
         comboDiv.style.backgroundColor = 'rgb(59, 122, 231)'
       }
     }
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
       this.startPos = 0
       this.endPos = this.textareaRef.value.length
     }
-    this.textareaRef.setSelectionRange(
-      this.startPos,
-      this.endPos,
-      'forward'
-    )
+    if (!e.shiftKey && e.key !== 'Shift') {
+      this.textareaRef.setSelectionRange(
+        this.startPos,
+        this.endPos,
+        'forward'
+      )
+    }
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.shiftKey) {
+      this.selection(this.selStart, this.selStart, 1)
+    }
+    if (e.key === 'ArrowUp' && !e.shiftKey) {
+      this.selection(this.textareaRef.value.length, this.textareaRef.value.length, 1)
+      for (let i = 0; i < this.tempArray.length; i++) {
+        if (this.textareaRef.value === '' || this.ele === 0) {
+          this.ele = 1
+        }
+        if (this.textareaRef.value === this.tempArray[i][0]) {
+          this.ele = i
+        }
+      }
+      if (this.ele <= this.tempArray.length) {
+        this.updateModel(this.tempArray[--this.ele][0])
+        const comboDiv = this.comboRef.children[1].children[this.ele] as HTMLDivElement
+        comboDiv.style.backgroundColor = ''
+        for (let j = 0; j < this.tempArray.length; j++) {
+          const com = this.comboRef.children[1].children[j] as HTMLDivElement
+          com.style.backgroundColor = ''
+        }
+        comboDiv.style.backgroundColor = 'rgb(59, 122, 231)'
+      }
+    } else if (e.key === 'ArrowDown' && !e.shiftKey) {
+      for (let i = 0; i < this.tempArray.length; i++) {
+        if (this.textareaRef.value === '') {
+          this.ele = -1
+        }
+        if (this.textareaRef.value === this.tempArray[i][0]) {
+          this.ele = i
+        }
+      }
+      if (this.ele >= 0 && this.ele < this.tempArray.length - 1) {
+        this.updateModel(this.tempArray[++this.ele][0])
+        const comboDiv = this.comboRef.children[1].children[this.ele] as HTMLDivElement
+        comboDiv.style.backgroundColor = ''
+        for (let j = 0; j < this.tempArray.length; j++) {
+          const com = this.comboRef.children[1].children[j] as HTMLDivElement
+          com.style.backgroundColor = ''
+        }
+        comboDiv.style.backgroundColor = 'rgb(59, 122, 231)'
+      }
+    }
     this.items = []
   }
 
-  selection (start: number, end: number) {
-    this.textareaRef.setSelectionRange(start, end, 'forward')
+  selection (start: number, end: number, direction: number) {
+    if (direction === 1) {
+      this.textareaRef.setSelectionRange(start, end, 'forward')
+    } else {
+      this.textareaRef.setSelectionRange(start, end, 'backward')
+    }
   }
 
   updateModel (val: string) {
@@ -943,18 +996,13 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   }
 
   matchComplete (e: KeyboardEvent) {
-    debugger
-    let a = this.$refs.textareaRef as HTMLInputElement
-    let b = this.$refs.textareaRef as HTMLInputElement
-    this.selStart = Number(a.selectionStart)
-    this.selEnd = Number(b.selectionEnd)
-    console.log('begin selstart', this.selStart)
-    console.log('begin selend', this.selEnd)
+    this.selStart = this.textareaRef.selectionStart
+    this.selEnd = this.textareaRef.selectionEnd
     for (let i = 0; i < this.tempArray.length; i++) {
       const comboDiv = this.comboRef.children[1].children[i] as HTMLDivElement
       comboDiv.style.backgroundColor = ''
       if (this.tempArray[i][0][0] === this.textareaRef.value[0]) {
-        this.start = Number(this.selStart)
+        this.start = this.selStart
         if (!this.tempArray[i][0].includes(this.textareaRef.value)) {
           this.updateModel(this.textareaRef.value)
         }
@@ -971,70 +1019,79 @@ export default class FDComboBox extends Mixins(FdControlVue) {
         }
       }
     }
-    if (e.key === 'Backspace') {
+    if (e.key === 'Backspace' && !e.shiftKey) {
       if (this.textareaRef.value.length === this.prevLen) {
         this.start += 1
       }
       this.start -= 1
-      if (this.start === 0 && this.$refs.textareaRef.selectionEnd === this.textareaRef.value.length) {
+      if (this.start === 0 && this.textareaRef.selectionEnd === this.textareaRef.value.length) {
         this.updateModel('')
         this.textareaRef.value = ''
         this.comboEle.style.backgroundColor = ''
+        this.selection(this.selStart, this.selStart, 1)
       }
-      if (this.selStart === this.selEnd && this.$refs.textareaRef.selectionStart !== this.textareaRef.value.length) {
+      if (this.selStart === this.selEnd && this.textareaRef.selectionStart !== this.textareaRef.value.length) {
         this.updateModel(this.textareaRef.value)
-        this.selection(this.selStart, this.selStart)
+        this.selection(this.selStart, this.selStart, 1)
         this.comboEle.style.backgroundColor = ''
         this.flag = 1
       } else {
-        this.selection(this.start, this.textareaRef.value.length)
+        this.selection(this.start, this.textareaRef.value.length, 1)
       }
-    } else if (e.key === 'Delete') {
-      if (this.$refs.textareaRef.selectionStart !== this.start) {
+    } else if (e.key === 'Delete' && !e.shiftKey) {
+      if (this.textareaRef.selectionStart !== this.start) {
         this.textareaRef.value = this.textareaRef.value.slice(0, this.start)
         this.updateModel(this.textareaRef.value)
-        this.selection(this.selStart, this.selStart)
+        this.selection(this.selStart, this.selStart, 1)
         this.comboEle.style.backgroundColor = ''
       } else if (this.selStart === this.prevLen) {
         this.textareaRef.value = this.textareaRef.value.slice(0, this.selStart) + this.textareaRef.value.slice(this.selEnd)
         this.updateModel(this.textareaRef.value)
-        this.selection(this.selStart, this.selStart)
+        this.selection(this.selStart, this.selStart, 1)
         this.comboEle.style.backgroundColor = ''
       }
-    } else if (e.shiftKey && e.which === 38) {
-
-    } else if (e.shiftKey && e.which === 39) {
-
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      this.selection(this.selStart, this.selStart)
-    } else if (e.key === 'ArrowUp') {
-      if (this.ele < 0) {
-        this.ele = 0
+    } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.shiftKey) {
+      this.selection(this.selStart, this.selStart, 1)
+    } else if (e.key === 'ArrowUp' && !e.shiftKey) {
+      for (let i = 0; i < this.tempArray.length; i++) {
+        if (this.textareaRef.value === '' || this.textareaRef.value === this.tempArray[0][0]) {
+          this.ele = 1
+        }
+        if (this.textareaRef.value === this.tempArray[i][0]) {
+          this.ele = i
+        }
       }
-      const comboDiv = this.comboRef.children[1].children[--this.ele] as HTMLDivElement
+      this.updateModel(this.tempArray[--this.ele][0])
+      const comboDiv = this.comboRef.children[1].children[this.ele] as HTMLDivElement
       comboDiv.style.backgroundColor = ''
-      this.updateModel(this.tempArray[this.ele][0])
       for (let j = 0; j < this.tempArray.length; j++) {
         const com = this.comboRef.children[1].children[j] as HTMLDivElement
         com.style.backgroundColor = ''
       }
       comboDiv.style.backgroundColor = 'rgb(59, 122, 231)'
-    } else if (e.key === 'ArrowDown') {
-      if (this.ele > this.tempArray.length) {
-        this.ele = this.tempArray.length
+    } else if (e.key === 'ArrowDown' && !e.shiftKey) {
+      for (let i = 0; i < this.tempArray.length; i++) {
+        if (this.textareaRef.value === '') {
+          this.ele = -1
+        }
+        if (this.textareaRef.value === this.tempArray[i][0]) {
+          this.ele = i
+        }
       }
-      const comboDiv = this.comboRef.children[1].children[++this.ele] as HTMLDivElement
-      comboDiv.style.backgroundColor = ''
-      this.updateModel(this.tempArray[this.ele][0])
-      for (let j = 0; j < this.tempArray.length; j++) {
-        const com = this.comboRef.children[1].children[j] as HTMLDivElement
-        com.style.backgroundColor = ''
+      if (this.ele >= 0 && this.ele < this.tempArray.length - 1) {
+        this.updateModel(this.tempArray[++this.ele][0])
+        const comboDiv = this.comboRef.children[1].children[this.ele] as HTMLDivElement
+        comboDiv.style.backgroundColor = ''
+        for (let j = 0; j < this.tempArray.length; j++) {
+          const com = this.comboRef.children[1].children[j] as HTMLDivElement
+          com.style.backgroundColor = ''
+        }
+        comboDiv.style.backgroundColor = 'rgb(59, 122, 231)'
       }
-      comboDiv.style.backgroundColor = 'rgb(59, 122, 231)'
-    } else {
-      this.selection(this.start, this.textareaRef.value.length)
+    } else if (!e.shiftKey && e.key !== 'Shift' && e.key !== 'Enter' && this.textareaRef.selectionStart !== 0) {
+      this.selection(this.start, this.textareaRef.value.length, 1)
     }
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
       this.start = this.beforeEnter
     }
     this.beforeEnter = this.start
@@ -1042,8 +1099,9 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     if (this.textareaRef.value === '') {
       this.flag = 0
     }
-    console.log('end selstart', this.$refs.textareaRef.selectionStart)
-    console.log('end selend', this.$refs.textareaRef.selectionEnd)
+    if (this.textareaRef.value.length === 1) {
+      this.selection(1, 1, 1)
+    }
   }
 
   handleTextInput (e: KeyboardEvent) {
@@ -1184,8 +1242,8 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     textareaRef: HTMLTextAreaElement,
     hideSelectionDiv: HTMLDivElement
   ) {
-    this.selStart = this.$refs.textareaRef.selectionStart
-    this.selEnd = this.$refs.textareaRef.selectionEnd
+    this.selStart = this.textareaRef.selectionStart
+    this.selEnd = this.textareaRef.selectionEnd
     if (!this.properties.HideSelection) {
       hideSelectionDiv.style.display = 'none'
     } else {
