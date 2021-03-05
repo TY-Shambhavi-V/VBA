@@ -24,6 +24,11 @@ export default class FdControlVue extends Vue {
   selectionData :Array<string> = [];
   matchEntry: Array<number> = [];
   matchIndex = -1;
+  matchItems = '';
+  inputMatch = '';
+  matchFlag: boolean = false;
+  start: number = 0;
+  last: number = 0;
   isDropdownVisible: boolean = true;
   isItalic: boolean = false;
   tempWeight: string = '400';
@@ -1020,11 +1025,13 @@ handleMultiSelect (e: MouseEvent) {
  *
  */
 handleExtendArrowKeySelect (e: KeyboardEvent) {
+  debugger
   const x = e.key.toUpperCase().charCodeAt(0)
   const tempPath = e.composedPath()
   const eventTarget = e.target as HTMLTableRowElement
   const nextSiblingEvent = eventTarget.nextSibling as HTMLDivElement
   const prevSiblingEvent = eventTarget.previousSibling as HTMLDivElement
+  this.last = Math.round(Date.now() / 1000)
   if (
    this.properties.MatchEntry! === 0 &&
    x >= 48 && x <= 90
@@ -1090,9 +1097,17 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     }
   } else if (
     this.properties.MatchEntry === 1 &&
-    x >= 48 && x <= 90
+    x >= 48 && x <= 90 && e.key !== 'ArrowUp' && e.key !== 'ArrowDown'
   ) {
-    let temp = this.extraDatas.MatchData + e.key
+    let temp = ''
+    const current = Math.round(Date.now() / 1000)
+    if (current - this.start >= 3) {
+      temp = this.matchItems + e.key
+    } else {
+      temp = this.extraDatas.MatchData + e.key
+    }
+    this.start = Math.round(Date.now() / 1000)
+
     this.updateDataModelExtraData({ propertyName: 'MatchData', value: temp })
 
     for (let point = 0; point < tempPath.length; point++) {
@@ -1121,10 +1136,11 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
           }
         }
 
-        if (this.extraDatas.MatchData!.length <= 1) {
+        if (this.extraDatas.MatchData!.length <= 1 && this.matchEntry.length !== 0) {
           let singleMatch = tbody.childNodes[this.matchEntry[0]] as HTMLDivElement
           this.clearOptionBGColorAndChecked(e)
           this.setBGandCheckedForMatch(singleMatch)
+          this.matchFlag = true
           break
         } else if (
          this.extraDatas.MatchData!.length > 1 &&
@@ -1133,14 +1149,80 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
           let completeAutoMatch = tbody.childNodes[this.matchEntry[0]] as HTMLDivElement
           this.clearOptionBGColorAndChecked(e)
           this.setBGandCheckedForMatch(completeAutoMatch)
+          this.matchFlag = true
+        } else {
+          this.matchFlag = false
         }
+        break
+      }
+    }
+  }
+
+  debugger
+  if (this.properties.MatchEntry === 1 && (e.key === 'Backspace' || !this.matchFlag)) {
+    let timeUp = false
+    if (Math.round(Date.now() / 1000) - this.last >= 3) {
+      timeUp = true
+    }
+    for (let point = 0; point < tempPath.length; point++) {
+      const tbody = tempPath[point] as HTMLDivElement
+      if (tbody.className === 'table-body' && timeUp) {
+        setTimeout(() => {
+          let singleMatch = tbody.childNodes[0] as HTMLDivElement
+          this.clearOptionBGColorAndChecked(e)
+          this.setBGandCheckedForMatch(singleMatch)
+        }, 3000)
         break
       }
     }
   }
   if (
     e.key === 'ArrowDown' &&
-   e.shiftKey === true &&
+   (nextSiblingEvent !== null || prevSiblingEvent.nextSibling !== null)
+  ) {
+    let currentElement: HTMLDivElement
+    if (nextSiblingEvent === null) {
+      currentElement = prevSiblingEvent.nextSibling! as HTMLDivElement
+    } else {
+      currentElement = nextSiblingEvent
+    }
+    if (this.properties.MultiSelect === 0) {
+      if (eventTarget.style.backgroundColor !== 'rgb(59, 122, 231)') {
+        this.clearOptionBGColorAndChecked(e)
+        currentElement!.style.backgroundColor = 'rgb(59, 122, 231)'
+      } else if (eventTarget.style.backgroundColor === 'rgb(59, 122, 231)') {
+        currentElement!.style.backgroundColor = 'rgb(59, 122, 231)'
+        eventTarget.style.backgroundColor = ''
+      }
+      currentElement!.focus()
+    }
+  }
+  if (
+    e.key === 'ArrowUp' &&
+   (nextSiblingEvent !== null || prevSiblingEvent.nextSibling !== null)
+  ) {
+    let currentElement: HTMLDivElement
+    if (prevSiblingEvent === null) {
+      currentElement = nextSiblingEvent.previousSibling! as HTMLDivElement
+    } else {
+      currentElement = prevSiblingEvent
+    }
+    if (this.properties.MultiSelect === 0) {
+      if (eventTarget.style.backgroundColor !== 'rgb(59, 122, 231)') {
+        this.clearOptionBGColorAndChecked(e)
+        currentElement!.style.backgroundColor = 'rgb(59, 122, 231)'
+      } else if (
+        eventTarget.style.backgroundColor === 'rgb(59, 122, 231)' &&
+        currentElement!.style.backgroundColor !== ''
+      ) {
+        this.setOptionBGColorAndChecked(e)
+      }
+      currentElement!.focus()
+    }
+  }
+  if (
+    e.key === 'ArrowDown' &&
+    e.shiftKey === true &&
    (nextSiblingEvent !== null || prevSiblingEvent.nextSibling !== null)
   ) {
     let currentElement: HTMLDivElement
@@ -1169,7 +1251,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     }
   } else if (
     e.key === 'ArrowUp' &&
-   e.shiftKey === true &&
+    e.shiftKey === true &&
    (prevSiblingEvent !== null || nextSiblingEvent.previousSibling !== null)
   ) {
     let currentElement: HTMLDivElement

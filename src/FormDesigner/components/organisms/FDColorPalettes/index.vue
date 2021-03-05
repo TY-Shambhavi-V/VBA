@@ -12,6 +12,7 @@
         id="clear"
         :style="colorPalettesStyleObj"
         @mousedown.prevent="openColorPalette"
+        @click="changeCount()"
       >
         _
       </button>
@@ -42,8 +43,8 @@
                   v-for="(color, i) in colors"
                   :key="i"
                   @click="selectColor(color)"
-                  :style="{ backgroundColor: color.value }"
-                ></div>
+                  :style="selectedPallete(color.value)"
+                ><div class="grid-inner"></div></div>
               </div>
             </div>
           </div>
@@ -53,21 +54,26 @@
               type="radio"
               id="color-2"
               name="tab-color-1"
+              @click="handleDiv(divContainer)"
             />
             <label for="color-2">System</label>
             <div class="content">
-              <div class="gridcontainer">
+              <div class="gridcontainer"
+              ref="divContainer"
+              @scroll="getScrollTop(divContainer)"
+              >
                 <div
                   class="gridcontainerStyle"
                   v-for="(color, i) in colorSystem"
                   :key="i"
-                  @click="selectColor(color)"
+                  :style="selectedColor(color.value)"
+                  @click="selectColor(color, divContainer)"
                 >
                   <span
                     class="griditem1"
                     :style="{ backgroundColor: color.value }"
                   ></span
-                  >{{ color.displayName }}
+                  > <div class="displayNameClass">{{ color.displayName }}</div>
                 </div>
               </div>
             </div>
@@ -98,6 +104,8 @@ export default class FDColorPalettes extends Vue {
   @Prop() value: string;
   @Prop() name: string;
   @Ref('colorPalleteRef') readonly colorPalleteRef!: HTMLDivElement;
+  @Ref('divContainer') readonly divContainer!: HTMLDivElement;
+
   private isVisible = false;
   top: number = 0
   left: number = 0
@@ -117,6 +125,50 @@ export default class FDColorPalettes extends Vue {
       this.$nextTick(function () {
         this.colorPalleteRef.focus()
       })
+    }
+  }
+  divscrollTop = 0
+  count = 1
+  handleDiv (divContainer: HTMLDivElement) {
+    if (divContainer) {
+      divContainer.scrollTop = this.divscrollTop
+    }
+  }
+  getScrollTop (divContainer: HTMLDivElement) {
+    if (divContainer) {
+      this.divscrollTop = divContainer.scrollTop
+    }
+  }
+  changeCount () {
+    console.log(this.count)
+  }
+  selectedPallete (palleteColor: string) {
+    if (this.value === palleteColor) {
+      return {
+        backgroundColor: palleteColor,
+        border: '0.5px solid white',
+        outline: '1px solid black'
+      }
+    } else {
+      console.log('else of the selected color')
+      return {
+        backgroundColor: palleteColor
+      }
+    }
+  }
+  selectedColor (val: string) {
+    let bgColor = ''
+    let textColor = ''
+    if (this.value === val) {
+      bgColor = 'rgb(15 121 206)'
+      textColor = 'white'
+    } else {
+      bgColor = ''
+      textColor = ''
+    }
+    return {
+      backgroundColor: bgColor,
+      color: textColor
     }
   }
 
@@ -239,7 +291,11 @@ export default class FDColorPalettes extends Vue {
   width: 14px;
   height: 14px;
 }
-
+.grid-inner{
+  width: 13px;
+  height: 13px;
+  border: 0.5px solid black;
+}
 .gridcontainer {
   height: 150px;
   border: 1px solid gray;
@@ -251,11 +307,19 @@ export default class FDColorPalettes extends Vue {
   width: 14px;
   height: 14px;
   text-align: center;
+  vertical-align: middle;
   margin: 1px;
   display: inline-block;
-  cursor: none;
+  cursor: context-menu;
 }
 .gridcontainerStyle {
   cursor: "context-menu";
+  vertical-align: super;
+  display: grid;
+  grid-template-columns: 20px auto;
+}
+.displayNameClass {
+  position: relative;
+  top: 2px;
 }
 </style>
