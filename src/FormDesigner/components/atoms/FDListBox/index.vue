@@ -45,6 +45,7 @@
           @mouseenter.stop="handleDrag"
           @keydown.esc="releaseEditMode"
           @blur.stop="clearMatchEntry"
+          @keyup="handleKeyup"
           @keydown.stop="handleExtendArrowKeySelect"
           @mousedown="
             isRunMode || isEditMode ? handleMousedown($event) : ''

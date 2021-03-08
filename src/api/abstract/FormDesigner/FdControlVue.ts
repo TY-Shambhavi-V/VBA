@@ -26,9 +26,12 @@ export default class FdControlVue extends Vue {
   matchIndex = -1;
   matchItems = '';
   inputMatch = '';
+  prevNode: HTMLDivElement;
   matchFlag: boolean = false;
   start: number = 0;
   last: number = 0;
+  timeup: boolean = false;
+  keyStop: boolean = false;
   isDropdownVisible: boolean = true;
   isItalic: boolean = false;
   tempWeight: string = '400';
@@ -1017,6 +1020,19 @@ handleMultiSelect (e: MouseEvent) {
   }
   a.style.backgroundColor = 'rgb(59, 122, 231)'
 }
+
+timer = 0;
+timeoutVal = 1000;
+
+handleKeyup (e: KeyboardEvent) {
+  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
+    window.clearTimeout(this.timer)
+    this.timer = window.setTimeout(() => {
+      this.keyStop = true
+    }, this.timeoutVal)
+  }
+}
+
 /**
  * @description updates the dataModel listBox object properties when keydown
  * @function handleExtendArrowKeySelect
@@ -1026,6 +1042,7 @@ handleMultiSelect (e: MouseEvent) {
  */
 handleExtendArrowKeySelect (e: KeyboardEvent) {
   debugger
+  window.clearTimeout(this.timer)
   const x = e.key.toUpperCase().charCodeAt(0)
   const tempPath = e.composedPath()
   const eventTarget = e.target as HTMLTableRowElement
@@ -1055,40 +1072,73 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
             this.matchEntry.push(index)
           }
         }
-
         if (
          this.extraDatas.MatchData![0] !== undefined &&
          this.extraDatas.MatchData![0] === e.key &&
          this.extraDatas.MatchData!.length > 0
         ) {
-          const tempChildNode = element.childNodes[this.matchEntry[this.matchIndex]] as HTMLDivElement
           this.matchIndex++
           if (
             this.matchIndex === this.matchEntry.length &&
            prevMatchData === this.extraDatas.MatchData
           ) {
             this.matchIndex = 0
+            const tempChildNode = element.childNodes[this.matchEntry[this.matchIndex]] as HTMLDivElement
             this.clearOptionBGColorAndChecked(e)
             this.setBGandCheckedForMatch(
               tempChildNode
             )
+            for (let i = 0; i < element.childNodes.length; i++) {
+              const el = element.childNodes[i] as HTMLDivElement
+              if (el.style.backgroundColor === 'rgb(59, 122, 231)') {
+                this.prevNode = el
+              }
+            }
             break
           } else if (prevMatchData !== this.extraDatas.MatchData) {
             this.matchIndex = 0
+            const tempChildNode = element.childNodes[this.matchEntry[this.matchIndex]] as HTMLDivElement
             this.clearOptionBGColorAndChecked(e)
             this.setBGandCheckedForMatch(
               tempChildNode
             )
+            if (this.matchEntry.length === 0) {
+              if (eventTarget !== this.prevNode) {
+                this.prevNode = eventTarget
+              }
+              this.clearOptionBGColorAndChecked(e)
+              this.setBGandCheckedForMatch(
+                this.prevNode
+              )
+            }
+            for (let i = 0; i < element.childNodes.length; i++) {
+              const el = element.childNodes[i] as HTMLDivElement
+              if (el.style.backgroundColor === 'rgb(59, 122, 231)') {
+                this.prevNode = el
+              }
+            }
             break
           } else {
-            if (this.matchEntry.length === 0) {
-              this.matchEntry.push(0)
-              this.matchIndex = 0
-            }
+            const tempChildNode = element.childNodes[this.matchEntry[this.matchIndex]] as HTMLDivElement
             this.clearOptionBGColorAndChecked(e)
             this.setBGandCheckedForMatch(
               tempChildNode
             )
+            if (this.matchEntry.length === 0) {
+              if (eventTarget !== this.prevNode) {
+                this.prevNode = eventTarget
+              }
+              this.clearOptionBGColorAndChecked(e)
+              this.setBGandCheckedForMatch(
+                this.prevNode
+              )
+            }
+            for (let i = 0; i < element.childNodes.length; i++) {
+              const el = element.childNodes[i] as HTMLDivElement
+              if (el.style.backgroundColor === 'rgb(59, 122, 231)') {
+                this.prevNode = el
+              }
+            }
             break
           }
         }
@@ -1157,69 +1207,89 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
       }
     }
   }
-
-  debugger
   if (this.properties.MatchEntry === 1 && (e.key === 'Backspace' || !this.matchFlag)) {
-    let timeUp = false
-    if (Math.round(Date.now() / 1000) - this.last >= 3) {
-      timeUp = true
-    }
     for (let point = 0; point < tempPath.length; point++) {
       const tbody = tempPath[point] as HTMLDivElement
-      if (tbody.className === 'table-body' && timeUp) {
-        setTimeout(() => {
-          let singleMatch = tbody.childNodes[0] as HTMLDivElement
-          this.clearOptionBGColorAndChecked(e)
-          this.setBGandCheckedForMatch(singleMatch)
-        }, 3000)
+      if (tbody.className === 'table-body') {
+        if (this.keyStop && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
+          setTimeout(() => {
+            let singleMatch = tbody.childNodes[0] as HTMLDivElement
+            this.clearOptionBGColorAndChecked(e)
+            this.setBGandCheckedForMatch(singleMatch)
+          }, 3000)
+        }
         break
       }
     }
   }
-  if (
-    e.key === 'ArrowDown' &&
-   (nextSiblingEvent !== null || prevSiblingEvent.nextSibling !== null)
-  ) {
-    let currentElement: HTMLDivElement
-    if (nextSiblingEvent === null) {
-      currentElement = prevSiblingEvent.nextSibling! as HTMLDivElement
-    } else {
-      currentElement = nextSiblingEvent
-    }
-    if (this.properties.MultiSelect === 0) {
-      if (eventTarget.style.backgroundColor !== 'rgb(59, 122, 231)') {
-        this.clearOptionBGColorAndChecked(e)
-        currentElement!.style.backgroundColor = 'rgb(59, 122, 231)'
-      } else if (eventTarget.style.backgroundColor === 'rgb(59, 122, 231)') {
-        currentElement!.style.backgroundColor = 'rgb(59, 122, 231)'
-        eventTarget.style.backgroundColor = ''
+  if (e.key === 'ArrowUp' && !e.shiftKey) {
+    for (let point = 0; point < tempPath.length; point++) {
+      const element = tempPath[point] as HTMLDivElement
+      if (element.className === 'table-body') {
+        for (let index = 0; index < element.childNodes.length; index++) {
+          const ei = element.childNodes[index] as HTMLDivElement
+          if (ei.style.backgroundColor === 'rgb(59, 122, 231)' && index !== 0) {
+            this.clearOptionBGColorAndChecked(e)
+            const ele = element.childNodes[--index] as HTMLDivElement
+            ele.style.backgroundColor = 'rgb(59, 122, 231)'
+          } else if (index === 0) {
+            ei.style.backgroundColor = 'rgb(59, 122, 231)'
+          }
+        }
       }
-      currentElement!.focus()
+    }
+  } else if (e.key === 'ArrowDown' && !e.shiftKey) {
+    for (let point = 0; point < tempPath.length; point++) {
+      const element = tempPath[point] as HTMLDivElement
+      if (element.className === 'table-body') {
+        for (let index = 0; index < element.childNodes.length; index++) {
+          const ei = element.childNodes[index] as HTMLDivElement
+          if (ei.style.backgroundColor === 'rgb(59, 122, 231)') {
+            this.clearOptionBGColorAndChecked(e)
+            if (index === element.childNodes.length - 1) {
+              index = element.childNodes.length - 2
+            }
+            const ele = element.childNodes[++index] as HTMLDivElement
+            ele.style.backgroundColor = 'rgb(59, 122, 231)'
+          }
+        }
+      }
     }
   }
-  if (
-    e.key === 'ArrowUp' &&
-   (nextSiblingEvent !== null || prevSiblingEvent.nextSibling !== null)
-  ) {
-    let currentElement: HTMLDivElement
-    if (prevSiblingEvent === null) {
-      currentElement = nextSiblingEvent.previousSibling! as HTMLDivElement
-    } else {
-      currentElement = prevSiblingEvent
-    }
-    if (this.properties.MultiSelect === 0) {
-      if (eventTarget.style.backgroundColor !== 'rgb(59, 122, 231)') {
-        this.clearOptionBGColorAndChecked(e)
-        currentElement!.style.backgroundColor = 'rgb(59, 122, 231)'
-      } else if (
-        eventTarget.style.backgroundColor === 'rgb(59, 122, 231)' &&
-        currentElement!.style.backgroundColor !== ''
-      ) {
-        this.setOptionBGColorAndChecked(e)
-      }
-      currentElement!.focus()
-    }
-  }
+  // if (
+  //   e.key === 'ArrowDown' &&
+  //  (nextSiblingEvent !== null || prevSiblingEvent.nextSibling !== null)
+  // ) {
+  //   let currentElement: HTMLDivElement
+  //   if (nextSiblingEvent === null) {
+  //     currentElement = prevSiblingEvent.nextSibling! as HTMLDivElement
+  //   } else {
+  //     currentElement = nextSiblingEvent
+  //   }
+  //   if (this.properties.MultiSelect === 0) {
+  //     this.clearOptionBGColorAndChecked(e)
+  //     eventTarget.style.backgroundColor = ''
+  //     currentElement!.style.backgroundColor = 'rgb(59, 122, 231)'
+  //     currentElement!.focus()
+  //   }
+  // }
+  // if (
+  //   e.key === 'ArrowUp' &&
+  //  (nextSiblingEvent !== null || prevSiblingEvent.nextSibling !== null)
+  // ) {
+  //   let currentElement: HTMLDivElement
+  //   if (prevSiblingEvent === null) {
+  //     currentElement = nextSiblingEvent.previousSibling! as HTMLDivElement
+  //   } else {
+  //     currentElement = prevSiblingEvent
+  //   }
+  //   if (this.properties.MultiSelect === 0) {
+  //     this.clearOptionBGColorAndChecked(e)
+  //     eventTarget.style.backgroundColor = ''
+  //     currentElement!.style.backgroundColor = 'rgb(59, 122, 231)'
+  //     currentElement!.focus()
+  //   }
+  // }
   if (
     e.key === 'ArrowDown' &&
     e.shiftKey === true &&

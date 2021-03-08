@@ -446,7 +446,8 @@ export class ControlPropertyData {
             ['google', 'd', 'e5'],
             ['height', 'wef', 'f6'],
             ['width', 'awe', 'g7'],
-            ['caption', 'rty', 'h8']
+            ['caption', 'rty', 'h8'],
+            ['car', 'rty', 'h8']
           ],
           MatchData: ''
         },
