@@ -738,9 +738,9 @@ export default class FdControlVue extends Vue {
      const ref = this.data.type!.includes('CheckBox') ? this.checkboxRef : this.optionBtnRef
      if (isBoolean !== '') {
        if (isBoolean) {
-         this.setStyle((ref as HTMLInputElement), (isBoolean as boolean), !(isBoolean as boolean), 'white')
+         this.setStyle((ref as HTMLInputElement), (isBoolean as boolean), !(isBoolean as boolean), '#FFFFFF')
        } else {
-         this.setStyle((ref as HTMLInputElement), false, false, 'white')
+         this.setStyle((ref as HTMLInputElement), false, false, '#FFFFFF')
        }
      } else {
        this.setStyle((ref as HTMLInputElement), true, true, 'rgba(220, 220, 220, 1)')
@@ -772,13 +772,13 @@ export default class FdControlVue extends Vue {
        if (this.tripleState % 3 === 0) {
          this.setStyle(targetRef, true, false, 'rgba(220, 220, 220, 1)')
        } else {
-         this.setStyle(targetRef, el, false, 'white')
+         this.setStyle(targetRef, el, false, '#FFFFFF')
          this.updateDataModel({ propertyName: 'Value', value: el })
        }
      } else {
        this.tripleState++
        this.updateDataModel({ propertyName: 'Value', value: el })
-       this.setStyle(targetRef, el, false, 'white')
+       this.setStyle(targetRef, el, false, '#FFFFFF')
      }
    }
  }
@@ -964,7 +964,8 @@ handleMultiSelect (e: MouseEvent) {
               for (let k = startPoint; k <= endPoint; k++) {
                 const node = ele.childNodes[k] as HTMLDivElement
                 const tempNode = node.childNodes[0].childNodes[0] as HTMLInputElement
-                node.style.backgroundColor = 'rgb(59, 122, 231)'
+                node.style.backgroundColor = 'rgb(0, 120, 215)'
+                node.style.color = '#FFFFFF'
                 if (
                   this.properties.ListStyle === 1 &&
              !tempNode.checked
@@ -1013,12 +1014,14 @@ handleMultiSelect (e: MouseEvent) {
   const a = e.currentTarget! as HTMLDivElement
   this.selectionData[0] = a.innerText
   a.style.backgroundColor = ''
+  a.style.color = '#000000'
   this.updateDataModel({ propertyName: 'Value', value: a.innerText })
   this.updateDataModel({ propertyName: 'Text', value: a.innerText })
   if (!e.shiftKey) {
     this.textareaRef.setSelectionRange(0, a.innerText.length, 'forward')
   }
-  a.style.backgroundColor = 'rgb(59, 122, 231)'
+  a.style.backgroundColor = 'rgb(0, 120, 215)'
+  a.style.color = '#FFFFFF'
 }
 
 timer = 0;
@@ -1041,7 +1044,6 @@ handleKeyup (e: KeyboardEvent) {
  *
  */
 handleExtendArrowKeySelect (e: KeyboardEvent) {
-  debugger
   window.clearTimeout(this.timer)
   const x = e.key.toUpperCase().charCodeAt(0)
   const tempPath = e.composedPath()
@@ -1090,7 +1092,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
             )
             for (let i = 0; i < element.childNodes.length; i++) {
               const el = element.childNodes[i] as HTMLDivElement
-              if (el.style.backgroundColor === 'rgb(59, 122, 231)') {
+              if (el.style.backgroundColor === 'rgb(0, 120, 215)') {
                 this.prevNode = el
               }
             }
@@ -1113,7 +1115,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
             }
             for (let i = 0; i < element.childNodes.length; i++) {
               const el = element.childNodes[i] as HTMLDivElement
-              if (el.style.backgroundColor === 'rgb(59, 122, 231)') {
+              if (el.style.backgroundColor === 'rgb(0, 120, 215)') {
                 this.prevNode = el
               }
             }
@@ -1135,7 +1137,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
             }
             for (let i = 0; i < element.childNodes.length; i++) {
               const el = element.childNodes[i] as HTMLDivElement
-              if (el.style.backgroundColor === 'rgb(59, 122, 231)') {
+              if (el.style.backgroundColor === 'rgb(0, 120, 215)') {
                 this.prevNode = el
               }
             }
@@ -1216,41 +1218,47 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
             let singleMatch = tbody.childNodes[0] as HTMLDivElement
             this.clearOptionBGColorAndChecked(e)
             this.setBGandCheckedForMatch(singleMatch)
-          }, 3000)
+          }, 2000)
         }
         break
       }
     }
   }
-  if (e.key === 'ArrowUp' && !e.shiftKey) {
+  if (e.key === 'ArrowUp') {
     for (let point = 0; point < tempPath.length; point++) {
       const element = tempPath[point] as HTMLDivElement
       if (element.className === 'table-body') {
         for (let index = 0; index < element.childNodes.length; index++) {
           const ei = element.childNodes[index] as HTMLDivElement
-          if (ei.style.backgroundColor === 'rgb(59, 122, 231)' && index !== 0) {
+          if (ei.style.backgroundColor === 'rgb(0, 120, 215)' && index !== 0) {
             this.clearOptionBGColorAndChecked(e)
             const ele = element.childNodes[--index] as HTMLDivElement
-            ele.style.backgroundColor = 'rgb(59, 122, 231)'
+            // ele.style.backgroundColor = 'rgb(0, 120, 215)'
+            // ele.style.color = '#FFFFFF'
+            this.setBGandCheckedForMatch(ele)
           } else if (index === 0) {
-            ei.style.backgroundColor = 'rgb(59, 122, 231)'
+            // ei.style.backgroundColor = 'rgb(0, 120, 215)'
+            // ei.style.color = '#FFFFFF'
+            this.setBGandCheckedForMatch(ei)
           }
         }
       }
     }
-  } else if (e.key === 'ArrowDown' && !e.shiftKey) {
+  } else if (e.key === 'ArrowDown') {
     for (let point = 0; point < tempPath.length; point++) {
       const element = tempPath[point] as HTMLDivElement
       if (element.className === 'table-body') {
         for (let index = 0; index < element.childNodes.length; index++) {
           const ei = element.childNodes[index] as HTMLDivElement
-          if (ei.style.backgroundColor === 'rgb(59, 122, 231)') {
+          if (ei.style.backgroundColor === 'rgb(0, 120, 215)') {
             this.clearOptionBGColorAndChecked(e)
             if (index === element.childNodes.length - 1) {
               index = element.childNodes.length - 2
             }
             const ele = element.childNodes[++index] as HTMLDivElement
-            ele.style.backgroundColor = 'rgb(59, 122, 231)'
+            // ele.style.backgroundColor = 'rgb(0, 120, 215)'
+            // ele.style.color = '#FFFFFF'
+            this.setBGandCheckedForMatch(ele)
           }
         }
       }
@@ -1269,7 +1277,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
   //   if (this.properties.MultiSelect === 0) {
   //     this.clearOptionBGColorAndChecked(e)
   //     eventTarget.style.backgroundColor = ''
-  //     currentElement!.style.backgroundColor = 'rgb(59, 122, 231)'
+  //     currentElement!.style.backgroundColor = 'rgb(0, 120, 215)'
   //     currentElement!.focus()
   //   }
   // }
@@ -1286,7 +1294,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
   //   if (this.properties.MultiSelect === 0) {
   //     this.clearOptionBGColorAndChecked(e)
   //     eventTarget.style.backgroundColor = ''
-  //     currentElement!.style.backgroundColor = 'rgb(59, 122, 231)'
+  //     currentElement!.style.backgroundColor = 'rgb(0, 120, 215)'
   //     currentElement!.focus()
   //   }
   // }
@@ -1302,10 +1310,10 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
       currentElement = nextSiblingEvent
     }
     if (this.properties.MultiSelect === 2) {
-      if (eventTarget.style.backgroundColor !== 'rgb(59, 122, 231)') {
+      if (eventTarget.style.backgroundColor !== 'rgb(0, 120, 215)') {
         this.setOptionBGColorAndChecked(e)
       } else if (
-        eventTarget.style.backgroundColor === 'rgb(59, 122, 231)' &&
+        eventTarget.style.backgroundColor === 'rgb(0, 120, 215)' &&
         currentElement!.style.backgroundColor !== ''
       ) {
         this.setOptionBGColorAndChecked(e)
@@ -1313,7 +1321,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
         this.setBGColorForNextSibling(e)
       } else if (
       eventTarget.nextSibling!.nextSibling === null &&
-      currentElement!.style.backgroundColor !== 'rgb(59, 122, 231)'
+      currentElement!.style.backgroundColor !== 'rgb(0, 120, 215)'
       ) {
         this.setBGColorForNextSibling(e)
       }
@@ -1332,7 +1340,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     }
     if (this.properties.MultiSelect === 2) {
       if (
-        eventTarget.style.backgroundColor === 'rgb(59, 122, 231)' &&
+        eventTarget.style.backgroundColor === 'rgb(0, 120, 215)' &&
         currentElement.style.backgroundColor !== ''
       ) {
         this.setOptionBGColorAndChecked(e)
@@ -1340,7 +1348,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
         this.setBGColorForPreviousSibling(e)
       } else if (
         eventTarget.previousSibling!.previousSibling === null &&
-        currentElement.style.backgroundColor !== 'rgb(59, 122, 231)'
+        currentElement.style.backgroundColor !== 'rgb(0, 120, 215)'
       ) {
         this.setBGColorForPreviousSibling(e)
       }
@@ -1361,7 +1369,7 @@ handleDrag (e: MouseEvent) {
   const etarget = e.target as HTMLDivElement
   if (this.properties.MultiSelect === 2) {
     if (e.which === 1) {
-      if (etarget.style.backgroundColor === 'rgb(59, 122, 231)') {
+      if (etarget.style.backgroundColor === 'rgb(0, 120, 215)') {
         this.unselectBGColorAndchecked(e)
       } else {
         this.setOptionBGColorAndChecked(e)
@@ -1382,9 +1390,13 @@ setBGColorForNextSibling (e: MouseEvent | KeyboardEvent) {
     const nextSiblingEvent = targetEvent.nextSibling as HTMLDivElement
     const nextSiblingCheckedEvent = nextSiblingEvent.children[0].childNodes[0] as HTMLInputElement
     nextSiblingEvent.style.backgroundColor =
-   nextSiblingEvent.style.backgroundColor === 'rgb(59, 122, 231)'
+   nextSiblingEvent.style.backgroundColor === 'rgb(0, 120, 215)'
      ? ''
-     : 'rgb(59, 122, 231)'
+     : 'rgb(0, 120, 215)'
+    nextSiblingEvent.style.color =
+   nextSiblingEvent.style.color === '#FFFFFF'
+     ? ''
+     : 'FFFFFF'
     if (
       this.properties.ListStyle === 1 &&
    this.properties.MultiSelect === 2
@@ -1405,9 +1417,13 @@ setBGColorForPreviousSibling (e: KeyboardEvent) {
     const prevSiblingEvent = targetEvent.previousSibling as HTMLDivElement
     const prevSiblingCheckedEvent = prevSiblingEvent.children[0].childNodes[0] as HTMLInputElement
     prevSiblingEvent.style.backgroundColor =
-   prevSiblingEvent.style.backgroundColor === 'rgb(59, 122, 231)'
+   prevSiblingEvent.style.backgroundColor === 'rgb(0, 120, 215)'
      ? ''
-     : 'rgb(59, 122, 231)'
+     : 'rgb(0, 120, 215)'
+    prevSiblingEvent.style.color =
+   prevSiblingEvent.style.color === '#FFFFFF'
+     ? ''
+     : '#FFFFFF'
     if (
       this.properties.ListStyle === 1 &&
    this.properties.MultiSelect === 2
@@ -1428,6 +1444,7 @@ clearOptionBGColorAndChecked (e: any) {
       if (e.path[i].className === 'tBodyStyle') {
         for (let j = 0; j < e.path[i].children.length; j++) {
           e.path[i].children[j].style.backgroundColor = ''
+          e.path[i].children[j].style.color = ''
         }
       }
     }
@@ -1444,9 +1461,11 @@ clearOptionBGColorAndChecked (e: any) {
         ) {
           const childNode = element.childNodes[childIndex] as HTMLDivElement
           childNode.style.backgroundColor = ''
+          childNode.style.color = ''
           for (let i = 0; i < childNode.children.length; i++) {
             const a = childNode.children[i] as HTMLDivElement
             a.style.backgroundColor = ''
+            a.style.color = 'black'
           }
           const ChildChecked = childNode.childNodes[0].childNodes[0] as HTMLInputElement
           if (ChildChecked && this.properties.ListStyle === 1) {
@@ -1469,9 +1488,13 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
   const childNodeChecked = currentTargetElement.children[0].childNodes[0] as HTMLInputElement
   if (this.data.type === 'ComboBox') {
     currentTargetElement.style.backgroundColor =
-   currentTargetElement.style.backgroundColor === 'rgb(59, 122, 231)'
+   currentTargetElement.style.backgroundColor === 'rgb(0, 120, 215)'
      ? ''
-     : 'rgb(59, 122, 231)'
+     : 'rgb(0, 120, 215)'
+    currentTargetElement.style.color =
+   currentTargetElement.style.color === '#FFFFFF'
+     ? ''
+     : '#FFFFFF'
   }
   if (this.data.type === 'ComboBox') {
     childNodeChecked.checked = !childNodeChecked.checked
@@ -1480,6 +1503,7 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
     const targetEvent = e.target
     if (this.data.type === 'ComboBox') {
       currentTargetElement.style.backgroundColor = ''
+      currentTargetElement.style.color = ''
     }
     if (
       this.properties.ListStyle === 1 &&
@@ -1487,40 +1511,50 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
     ) {
       childNodeChecked.checked = !childNodeChecked.checked
       if (childNodeChecked.checked === true) {
-        currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
+        currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
+        currentTargetElement.style.color = '#FFFFFF'
       } else {
         currentTargetElement.style.backgroundColor = ''
+        currentTargetElement.style.color = ''
       }
     } else {
       childNodeChecked.checked = !childNodeChecked.checked
       if (this.properties.MultiSelect === 0) {
-        currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
+        currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
+        currentTargetElement.style.color = '#FFFFFF'
         if (this.properties.ListStyle === 1) {
           if (childNodeChecked.checked) {
-            currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
+            currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
+            currentTargetElement.style.color = '#FFFFFF'
           }
         }
       } else if (this.properties.MultiSelect === 1) {
-        if (currentTargetElement.style.backgroundColor === 'rgb(59, 122, 231)') {
+        if (currentTargetElement.style.backgroundColor === 'rgb(0, 120, 215)') {
           currentTargetElement.style.backgroundColor = ''
+          currentTargetElement.style.color = ''
           if (this.properties.ListStyle === 1) {
             if (childNodeChecked.checked) {
-              currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
+              currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
+              currentTargetElement.style.color = '#FFFFFF'
             } else {
               currentTargetElement.style.backgroundColor = ''
+              currentTargetElement.style.color = ''
             }
           }
         } else {
-          currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
+          currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
+          currentTargetElement.style.color = '#FFFFFF'
           if (this.properties.ListStyle === 1) {
             if (childNodeChecked.checked) {
-              currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
+              currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
+              currentTargetElement.style.color = '#FFFFFF'
             }
           }
         }
       } else if (this.properties.MultiSelect === 2) {
         childNodeChecked.checked = true
-        currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
+        currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
+        currentTargetElement.style.color = '#FFFFFF'
       }
     }
   }
@@ -1532,6 +1566,7 @@ unselectBGColorAndchecked (e: KeyboardEvent | MouseEvent) {
   if (this.properties.MultiSelect === 2) {
     childNodeChecked.checked = false
     currentTargetElement.style.backgroundColor = ''
+    currentTargetElement.style.color = ''
   }
 }
 
@@ -1542,7 +1577,8 @@ unselectBGColorAndchecked (e: KeyboardEvent | MouseEvent) {
 */
 setBGandCheckedForMatch (singleMatch: HTMLDivElement) {
   if (singleMatch !== undefined) {
-    singleMatch.style.backgroundColor = 'rgb(59, 122, 231)'
+    singleMatch.style.backgroundColor = 'rgb(0, 120, 215)'
+    singleMatch.style.color = '#FFFFFF'
     if ((this.properties.ListStyle === 1)) {
       const tempNode = singleMatch.childNodes[0].childNodes[0] as HTMLInputElement
       tempNode.checked = !tempNode.checked

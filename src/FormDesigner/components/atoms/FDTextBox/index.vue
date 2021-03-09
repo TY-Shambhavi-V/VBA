@@ -402,6 +402,7 @@ export default class FDTextBox extends Mixins(FdControlVue) {
     } else {
       throw new Error('Expected HTMLTextAreaElement but found different element')
     }
+    debugger
   }
 
   @Watch('properties.Font.FontSize', { deep: true })
