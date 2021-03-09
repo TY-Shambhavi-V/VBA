@@ -7,7 +7,8 @@
     @click="listBoxClick"
     @mousedown="controlEditMode"
     :tabindex="properties.TabIndex"
-    @keydown="forMatchEntry"
+    @keyup="handleKeyup"
+    @keydown.stop="handleExtendArrowKeySelect"
     v-on="eventStoppers()"
     @keydown.esc="setContentEditable($event, false)"
   >
@@ -45,8 +46,6 @@
           @mouseenter.stop="handleDrag"
           @keydown.esc="releaseEditMode"
           @blur.stop="clearMatchEntry"
-          @keyup="handleKeyup"
-          @keydown.stop="handleExtendArrowKeySelect"
           @mousedown="
             isRunMode || isEditMode ? handleMousedown($event) : ''
           "
@@ -1235,9 +1234,15 @@ export default class FDListBox extends Mixins(FdControlVue) {
 .tdClassIn {
   width: fit-content !important;
   min-width: 0px !important;
+  color: #000;
 }
 .inputClass {
   margin: 0;
+  color: #000;
+}
+.inputClass input[type=radio]:checked {
+  color: #000;
+  background: #000;
 }
 .thead {
   position: sticky;

@@ -1044,6 +1044,7 @@ handleKeyup (e: KeyboardEvent) {
  *
  */
 handleExtendArrowKeySelect (e: KeyboardEvent) {
+  debugger
   window.clearTimeout(this.timer)
   const x = e.key.toUpperCase().charCodeAt(0)
   const tempPath = e.composedPath()
@@ -1233,13 +1234,13 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
           if (ei.style.backgroundColor === 'rgb(0, 120, 215)' && index !== 0) {
             this.clearOptionBGColorAndChecked(e)
             const ele = element.childNodes[--index] as HTMLDivElement
-            // ele.style.backgroundColor = 'rgb(0, 120, 215)'
-            // ele.style.color = '#FFFFFF'
-            this.setBGandCheckedForMatch(ele)
+            ele.style.backgroundColor = 'rgb(0, 120, 215)'
+            ele.style.color = '#FFFFFF'
+            // this.setBGandCheckedForMatch(ele)
           } else if (index === 0) {
-            // ei.style.backgroundColor = 'rgb(0, 120, 215)'
-            // ei.style.color = '#FFFFFF'
-            this.setBGandCheckedForMatch(ei)
+            ei.style.backgroundColor = 'rgb(0, 120, 215)'
+            ei.style.color = '#FFFFFF'
+            // this.setBGandCheckedForMatch(ei)
           }
         }
       }
@@ -1256,9 +1257,9 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
               index = element.childNodes.length - 2
             }
             const ele = element.childNodes[++index] as HTMLDivElement
-            // ele.style.backgroundColor = 'rgb(0, 120, 215)'
-            // ele.style.color = '#FFFFFF'
-            this.setBGandCheckedForMatch(ele)
+            ele.style.backgroundColor = 'rgb(0, 120, 215)'
+            ele.style.color = '#FFFFFF'
+            // this.setBGandCheckedForMatch(ele)
           }
         }
       }
@@ -1578,7 +1579,7 @@ unselectBGColorAndchecked (e: KeyboardEvent | MouseEvent) {
 setBGandCheckedForMatch (singleMatch: HTMLDivElement) {
   if (singleMatch !== undefined) {
     singleMatch.style.backgroundColor = 'rgb(0, 120, 215)'
-    singleMatch.style.color = '#FFFFFF'
+    singleMatch.style.color = '#FFF'
     if ((this.properties.ListStyle === 1)) {
       const tempNode = singleMatch.childNodes[0].childNodes[0] as HTMLInputElement
       tempNode.checked = !tempNode.checked
