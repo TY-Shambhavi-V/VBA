@@ -1071,7 +1071,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
           if (this.properties.ListStyle === 0) {
             si = -1
           }
-          if (splitData[si + 1][0].includes(this.extraDatas.MatchData!)) {
+          if (splitData[si + 1][0].includes(this.extraDatas.MatchData!.toLowerCase())) {
             this.matchEntry.push(index)
           }
         }
@@ -1122,11 +1122,6 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
             }
             break
           } else {
-            const tempChildNode = element.childNodes[this.matchEntry[this.matchIndex]] as HTMLDivElement
-            this.clearOptionBGColorAndChecked(e)
-            this.setBGandCheckedForMatch(
-              tempChildNode
-            )
             if (this.matchEntry.length === 0) {
               if (eventTarget !== this.prevNode) {
                 this.prevNode = eventTarget
@@ -1134,6 +1129,12 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
               this.clearOptionBGColorAndChecked(e)
               this.setBGandCheckedForMatch(
                 this.prevNode
+              )
+            } else {
+              const tempChildNode = element.childNodes[this.matchEntry[this.matchIndex]] as HTMLDivElement
+              this.clearOptionBGColorAndChecked(e)
+              this.setBGandCheckedForMatch(
+                tempChildNode
               )
             }
             for (let i = 0; i < element.childNodes.length; i++) {
@@ -1177,12 +1178,12 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
             sii = -1
           }
           if (
-            matchEntryComplete[sii + 1][0].includes(this.extraDatas.MatchData!) &&
+            matchEntryComplete[sii + 1][0].includes(this.extraDatas.MatchData!.toLowerCase()) &&
            this.extraDatas.MatchData!.length < 2
           ) {
             this.matchEntry.push(p)
           } else if (
-            matchEntryComplete[sii + 1].includes(this.extraDatas.MatchData!) &&
+            matchEntryComplete[sii + 1].includes(this.extraDatas.MatchData!.toLowerCase()) &&
            this.extraDatas.MatchData!.length > 1
           ) {
             this.matchEntry.push(p)
