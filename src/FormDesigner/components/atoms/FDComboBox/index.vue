@@ -1005,6 +1005,17 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     this.items = []
   }
 
+  setBGandCheckedForMatch (singleMatch: HTMLDivElement) {
+    if (singleMatch !== undefined) {
+      singleMatch.style.backgroundColor = 'rgb(0, 120, 215)'
+      singleMatch.style.color = '#FFF'
+      if ((this.properties.ListStyle === 1)) {
+        const tempNode = singleMatch.childNodes[0].childNodes[0] as HTMLInputElement
+        tempNode.checked = !tempNode.checked
+      }
+    }
+  }
+
   selection (start: number, end: number, direction: number) {
     if (direction === 1) {
       this.textareaRef.setSelectionRange(start, end, 'forward')
@@ -1036,29 +1047,41 @@ export default class FDComboBox extends Mixins(FdControlVue) {
       const comboDiv = this.comboRef.children[1].children[i] as HTMLDivElement
       comboDiv.style.backgroundColor = ''
       comboDiv.style.color = '#000000'
-      if (this.tempArray[i][0][0] === this.textareaRef.value[0]) {
-        this.start = this.selStart
-        if (!this.tempArray[i][0].includes(this.textareaRef.value)) {
-          this.updateModel(this.textareaRef.value)
-        }
-        if (this.tempArray[i][0].includes(this.textareaRef.value) && this.flag === 0) {
-          this.updateModel(this.tempArray[i][0])
-          this.textareaRef.value = this.tempArray[i][0]
-          for (let j = 0; j < this.tempArray.length; j++) {
-            const com = this.comboRef.children[1].children[j] as HTMLDivElement
-            com.style.backgroundColor = ''
-            com.style.color = '#000000'
+      let isCap = false
+      if (this.textareaRef.value[0] !== undefined) {
+        if (this.tempArray[i][0][0] === this.textareaRef.value[0].toLowerCase()) {
+          this.start = this.selStart
+          if (this.textareaRef.value[0].toUpperCase() === this.textareaRef.value[0]) {
+            isCap = true
           }
-          this.matchedItem = this.tempArray[i][0]
-          comboDiv.style.backgroundColor = 'rgb(0, 120, 215)'
-          comboDiv.style.color = '#FFFFFF'
-          this.comboEle = comboDiv
-          this.selection(this.start, this.textareaRef.value.length, 1)
-          break
+          if (!this.tempArray[i][0].includes(this.textareaRef.value)) {
+            this.updateModel(this.textareaRef.value)
+          }
+          if (this.tempArray[i][0].includes(this.textareaRef.value.toLowerCase()) && this.flag === 0) {
+            this.updateModel(this.tempArray[i][0])
+            this.textareaRef.value = this.tempArray[i][0]
+            for (let j = 0; j < this.tempArray.length; j++) {
+              const com = this.comboRef.children[1].children[j] as HTMLDivElement
+              com.style.backgroundColor = ''
+              com.style.color = '#000000'
+            }
+            this.matchedItem = this.tempArray[i][0]
+            comboDiv.style.backgroundColor = 'rgb(0, 120, 215)'
+            comboDiv.style.color = '#FFFFFF'
+            this.comboEle = comboDiv
+            if ((!e.shiftKey && e.key !== 'ArrowLeft' &&
+            e.key !== 'ArrowRight' && e.key !== 'Shift') ||
+            (isCap === true)) {
+              console.log(8)
+              this.selection(this.start, this.textareaRef.value.length, 1)
+            }
+            break
+          }
         }
       }
     }
     if (e.key === 'Backspace' && !e.shiftKey) {
+      console.log(1)
       if (this.textareaRef.value.length === this.prevLen) {
         this.start += 1
       }
@@ -1084,6 +1107,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
         this.selection(this.start, this.textareaRef.value.length, 1)
       }
     } else if (e.key === 'Delete' && !e.shiftKey) {
+      console.log(2)
       if (this.textareaRef.selectionStart !== this.start &&
       this.textareaRef.selectionStart !== this.textareaRef.selectionEnd) {
         this.textareaRef.value = this.textareaRef.value.slice(0, this.start)
@@ -1099,8 +1123,10 @@ export default class FDComboBox extends Mixins(FdControlVue) {
         this.comboEle.style.color = '#000000'
       }
     } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.shiftKey) {
+      console.log(3)
       this.selection(this.selStart, this.selStart, 1)
-    } else if (e.key === 'ArrowUp' && !e.shiftKey && this.properties.Enabled) {
+    } else if (e.key === 'ArrowUp' && this.properties.Enabled) {
+      console.log(4)
       for (let i = 0; i < this.tempArray.length; i++) {
         if (this.textareaRef.value === '' || this.textareaRef.value === this.tempArray[0][0]) {
           this.ele = 1
@@ -1118,9 +1144,9 @@ export default class FDComboBox extends Mixins(FdControlVue) {
         com.style.backgroundColor = ''
         com.style.color = '#000000'
       }
-      comboDiv.style.backgroundColor = 'rgb(0, 120, 215)'
-      comboDiv.style.color = '#FFFFFF'
-    } else if (e.key === 'ArrowDown' && !e.shiftKey && this.properties.Enabled) {
+      this.setBGandCheckedForMatch(comboDiv)
+    } else if (e.key === 'ArrowDown' && this.properties.Enabled) {
+      console.log(5)
       for (let i = 0; i < this.tempArray.length; i++) {
         if (this.textareaRef.value === '') {
           this.ele = -1
@@ -1129,7 +1155,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
           this.ele = i
         }
       }
-      if (this.ele >= 0 && this.ele < this.tempArray.length - 1) {
+      if (this.ele < this.tempArray.length - 1) {
         this.updateModel(this.tempArray[++this.ele][0])
         const comboDiv = this.comboRef.children[1].children[this.ele] as HTMLDivElement
         comboDiv.style.backgroundColor = ''
@@ -1139,9 +1165,32 @@ export default class FDComboBox extends Mixins(FdControlVue) {
           com.style.backgroundColor = ''
           com.style.color = '#000000'
         }
-        comboDiv.style.backgroundColor = 'rgb(0, 120, 215)'
-        comboDiv.style.color = '#FFFFFF'
+        this.setBGandCheckedForMatch(comboDiv)
       }
+    } else if (e.key === 'PageUp') {
+      console.log(6)
+      this.updateModel(this.tempArray[0][0])
+      const comboDiv = this.comboRef.children[1].children[0] as HTMLDivElement
+      comboDiv.style.backgroundColor = ''
+      comboDiv.style.color = '#000000'
+      for (let j = 0; j < this.tempArray.length; j++) {
+        const com = this.comboRef.children[1].children[j] as HTMLDivElement
+        com.style.backgroundColor = ''
+        com.style.color = '#000000'
+      }
+      this.setBGandCheckedForMatch(comboDiv)
+    } else if (e.key === 'PageDown') {
+      console.log(7)
+      this.updateModel(this.tempArray[this.tempArray.length - 1][0])
+      const comboDiv = this.comboRef.children[1].children[this.tempArray.length - 1] as HTMLDivElement
+      comboDiv.style.backgroundColor = ''
+      comboDiv.style.color = '#000000'
+      for (let j = 0; j < this.tempArray.length; j++) {
+        const com = this.comboRef.children[1].children[j] as HTMLDivElement
+        com.style.backgroundColor = ''
+        com.style.color = '#000000'
+      }
+      this.setBGandCheckedForMatch(comboDiv)
     }
     if (e.key === 'Enter' && !e.shiftKey) {
       this.start = this.beforeEnter
@@ -2022,13 +2071,17 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   width: 10px;
   max-width: 10px !important;
   min-width: 0px !important;
-  color: '#000000';
-  background-color: '#000000';
 }
 .inputClass {
   margin: 0;
   color: '#000000';
   background-color: '#000000';
+  width: 8px;
+  height: 8px;
+}
+.inputClass input[type=radio]:checked {
+  color: #000000;
+  background-color: #000000;
 }
 .hrStyle {
   display: block !important;

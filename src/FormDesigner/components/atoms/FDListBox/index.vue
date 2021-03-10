@@ -7,8 +7,7 @@
     @click="listBoxClick"
     @mousedown="controlEditMode"
     :tabindex="properties.TabIndex"
-    @keyup="handleKeyup"
-    @keydown.stop="handleExtendArrowKeySelect"
+    @keydown="forMatchEntry"
     v-on="eventStoppers()"
     @keydown.esc="setContentEditable($event, false)"
   >
@@ -41,6 +40,8 @@
           :tabindex="index"
           class="tr"
           ref="listStyleRef"
+          @keyup="handleKeyup"
+          @keydown.stop="handleExtendArrowKeySelect"
           v-for="(item, index) of extraDatas.RowSourceData"
           :key="index"
           @mouseenter.stop="handleDrag"

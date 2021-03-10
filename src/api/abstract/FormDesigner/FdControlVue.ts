@@ -1054,7 +1054,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
   this.last = Math.round(Date.now() / 1000)
   if (
    this.properties.MatchEntry! === 0 &&
-   x >= 48 && x <= 90
+   x >= 48 && x <= 90 && e.key !== 'ArrowUp' && e.key !== 'ArrowDown'
   ) {
     this.matchEntry = []
     const prevMatchData =
@@ -1234,13 +1234,9 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
           if (ei.style.backgroundColor === 'rgb(0, 120, 215)' && index !== 0) {
             this.clearOptionBGColorAndChecked(e)
             const ele = element.childNodes[--index] as HTMLDivElement
-            ele.style.backgroundColor = 'rgb(0, 120, 215)'
-            ele.style.color = '#FFFFFF'
-            // this.setBGandCheckedForMatch(ele)
+            this.setBGandCheckedForMatch(ele)
           } else if (index === 0) {
-            ei.style.backgroundColor = 'rgb(0, 120, 215)'
-            ei.style.color = '#FFFFFF'
-            // this.setBGandCheckedForMatch(ei)
+            this.setBGandCheckedForMatch(ei)
           }
         }
       }
@@ -1257,48 +1253,12 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
               index = element.childNodes.length - 2
             }
             const ele = element.childNodes[++index] as HTMLDivElement
-            ele.style.backgroundColor = 'rgb(0, 120, 215)'
-            ele.style.color = '#FFFFFF'
-            // this.setBGandCheckedForMatch(ele)
+            this.setBGandCheckedForMatch(ele)
           }
         }
       }
     }
   }
-  // if (
-  //   e.key === 'ArrowDown' &&
-  //  (nextSiblingEvent !== null || prevSiblingEvent.nextSibling !== null)
-  // ) {
-  //   let currentElement: HTMLDivElement
-  //   if (nextSiblingEvent === null) {
-  //     currentElement = prevSiblingEvent.nextSibling! as HTMLDivElement
-  //   } else {
-  //     currentElement = nextSiblingEvent
-  //   }
-  //   if (this.properties.MultiSelect === 0) {
-  //     this.clearOptionBGColorAndChecked(e)
-  //     eventTarget.style.backgroundColor = ''
-  //     currentElement!.style.backgroundColor = 'rgb(0, 120, 215)'
-  //     currentElement!.focus()
-  //   }
-  // }
-  // if (
-  //   e.key === 'ArrowUp' &&
-  //  (nextSiblingEvent !== null || prevSiblingEvent.nextSibling !== null)
-  // ) {
-  //   let currentElement: HTMLDivElement
-  //   if (prevSiblingEvent === null) {
-  //     currentElement = nextSiblingEvent.previousSibling! as HTMLDivElement
-  //   } else {
-  //     currentElement = prevSiblingEvent
-  //   }
-  //   if (this.properties.MultiSelect === 0) {
-  //     this.clearOptionBGColorAndChecked(e)
-  //     eventTarget.style.backgroundColor = ''
-  //     currentElement!.style.backgroundColor = 'rgb(0, 120, 215)'
-  //     currentElement!.focus()
-  //   }
-  // }
   if (
     e.key === 'ArrowDown' &&
     e.shiftKey === true &&
