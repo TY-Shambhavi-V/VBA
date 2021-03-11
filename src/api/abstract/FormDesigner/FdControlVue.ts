@@ -1224,7 +1224,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     }
   }
   if (e.key === 'ArrowUp') {
-    if (this.properties.MultiSelect === 0 || this.properties.MultiSelect === 1 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
+    if (this.properties.MultiSelect === 0 || this.properties.MultiSelect === 1) {
       for (let point = 0; point < tempPath.length; point++) {
         const element = tempPath[point] as HTMLDivElement
         if (element.className === 'table-body') {
@@ -1244,28 +1244,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
       }
     }
   } else if (e.key === 'ArrowDown') {
-    if (this.properties.MultiSelect === 0 || this.properties.MultiSelect === 1 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
-      for (let point = 0; point < tempPath.length; point++) {
-        const element = tempPath[point] as HTMLDivElement
-        if (element.className === 'table-body') {
-          for (let index = 0; index < element.childNodes.length; index++) {
-            const ei = element.childNodes[index] as HTMLDivElement
-            if (ei.style.backgroundColor === 'rgb(0, 120, 215)') {
-              this.clearOptionBGColorAndChecked(e)
-              if (index === element.childNodes.length - 1) {
-                index = element.childNodes.length - 2
-              }
-              const ele = element.childNodes[++index] as HTMLDivElement
-              this.setBGandCheckedForMatch(ele)
-              this.prevNode = ele
-            }
-          }
-        }
-      }
-    }
-  }
-  if (e.key === 'ArrowDown') {
-    if (this.properties.MultiSelect === 0 || this.properties.MultiSelect === 1 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
+    if (this.properties.MultiSelect === 0 || this.properties.MultiSelect === 1) {
       for (let point = 0; point < tempPath.length; point++) {
         const element = tempPath[point] as HTMLDivElement
         if (element.className === 'table-body') {
