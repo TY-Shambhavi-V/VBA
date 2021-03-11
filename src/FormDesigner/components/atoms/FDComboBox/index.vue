@@ -1978,7 +1978,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   color: '';
   display: inline-flex;
 }
-.active:hover{
+.active:hover:not([disabled]){
   background-color: rgb(0, 125, 215);
   color:#FFF;
 }
@@ -2058,6 +2058,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   max-width: 10px !important;
   min-width: 0px !important;
 }
+
 .inputClass {
   margin: 0;
   color: '#000000';

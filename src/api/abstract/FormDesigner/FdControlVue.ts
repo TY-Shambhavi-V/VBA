@@ -26,6 +26,7 @@ export default class FdControlVue extends Vue {
   matchIndex = -1;
   matchItems = '';
   inputMatch = '';
+  keyCount: number = 0;
   prevNode: HTMLDivElement;
   matchFlag: boolean = false;
   start: number = 0;
@@ -888,6 +889,7 @@ topIndexCheck (newVal:number, oldVal:number) {
  *
  */
 handleMultiSelect (e: MouseEvent) {
+  debugger
   if (e.target instanceof HTMLTableCellElement || e.target instanceof HTMLTableRowElement || e.target instanceof HTMLDivElement) {
     this.tempListBoxComboBoxEvent = e
     const targetElement = e.target
@@ -1044,13 +1046,15 @@ handleKeyup (e: KeyboardEvent) {
  *
  */
 handleExtendArrowKeySelect (e: KeyboardEvent) {
-  debugger
+  // debugger
   window.clearTimeout(this.timer)
   const x = e.key.toUpperCase().charCodeAt(0)
   const tempPath = e.composedPath()
   const eventTarget = e.target as HTMLTableRowElement
   const nextSiblingEvent = eventTarget.nextSibling as HTMLDivElement
   const prevSiblingEvent = eventTarget.previousSibling as HTMLDivElement
+  this.keyCount++
+  const prev = eventTarget
   this.last = Math.round(Date.now() / 1000)
   if (
    this.properties.MatchEntry! === 0 &&
@@ -1064,16 +1068,25 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     for (let index = 0; index < tempPath.length; index++) {
       const element = tempPath[index] as HTMLDivElement
       if (element.className === 'table-body') {
+        for (let i = 0; i < element.childNodes.length; i++) {
+          const el = element.childNodes[i] as HTMLDivElement
+          if (el.style.backgroundColor === 'rgb(0, 120, 215)') {
+            this.prevNode = el
+          }
+        }
         for (let index = 0; index < element.childNodes.length; index++) {
           const ei = element.childNodes[index] as HTMLDivElement
           let splitData = ei.innerText.replace(/\t/g, ' ').split(' ')
           let si = 0
-          if (this.properties.ListStyle === 0) {
-            si = -1
+          si = -1
+          if (si + 1 < splitData.length) {
+            if (splitData[si + 1][0].includes(this.extraDatas.MatchData!.toLowerCase())) {
+              this.matchEntry.push(index)
+            }
           }
-          if (splitData[si + 1][0].includes(this.extraDatas.MatchData!.toLowerCase())) {
-            this.matchEntry.push(index)
-          }
+        }
+        if (this.keyCount <= 1) {
+          this.prevNode = prev
         }
         if (
          this.extraDatas.MatchData![0] !== undefined &&
@@ -1091,11 +1104,11 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
             this.setBGandCheckedForMatch(
               tempChildNode
             )
-            for (let i = 0; i < element.childNodes.length; i++) {
-              const el = element.childNodes[i] as HTMLDivElement
-              if (el.style.backgroundColor === 'rgb(0, 120, 215)') {
-                this.prevNode = el
-              }
+            if (this.matchEntry.length === 0) {
+              this.clearOptionBGColorAndChecked(e)
+              this.setBGandCheckedForMatch(
+                this.prevNode
+              )
             }
             break
           } else if (prevMatchData !== this.extraDatas.MatchData) {
@@ -1106,26 +1119,14 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
               tempChildNode
             )
             if (this.matchEntry.length === 0) {
-              if (eventTarget !== this.prevNode) {
-                this.prevNode = eventTarget
-              }
               this.clearOptionBGColorAndChecked(e)
               this.setBGandCheckedForMatch(
                 this.prevNode
               )
             }
-            for (let i = 0; i < element.childNodes.length; i++) {
-              const el = element.childNodes[i] as HTMLDivElement
-              if (el.style.backgroundColor === 'rgb(0, 120, 215)') {
-                this.prevNode = el
-              }
-            }
             break
           } else {
             if (this.matchEntry.length === 0) {
-              if (eventTarget !== this.prevNode) {
-                this.prevNode = eventTarget
-              }
               this.clearOptionBGColorAndChecked(e)
               this.setBGandCheckedForMatch(
                 this.prevNode
@@ -1136,12 +1137,6 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
               this.setBGandCheckedForMatch(
                 tempChildNode
               )
-            }
-            for (let i = 0; i < element.childNodes.length; i++) {
-              const el = element.childNodes[i] as HTMLDivElement
-              if (el.style.backgroundColor === 'rgb(0, 120, 215)') {
-                this.prevNode = el
-              }
             }
             break
           }
@@ -1174,19 +1169,19 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
             .replace(/\t/g, ' ')
             .split(' ')
           let sii = 0
-          if (this.properties.ListStyle === 0) {
-            sii = -1
-          }
-          if (
-            matchEntryComplete[sii + 1][0].includes(this.extraDatas.MatchData!.toLowerCase()) &&
-           this.extraDatas.MatchData!.length < 2
-          ) {
-            this.matchEntry.push(p)
-          } else if (
-            matchEntryComplete[sii + 1].includes(this.extraDatas.MatchData!.toLowerCase()) &&
-           this.extraDatas.MatchData!.length > 1
-          ) {
-            this.matchEntry.push(p)
+          sii = -1
+          if (sii + 1 < matchEntryComplete.length) {
+            if (
+              matchEntryComplete[sii + 1][0].includes(this.extraDatas.MatchData!.toLowerCase()) &&
+            this.extraDatas.MatchData!.length < 2
+            ) {
+              this.matchEntry.push(p)
+            } else if (
+              matchEntryComplete[sii + 1].includes(this.extraDatas.MatchData!.toLowerCase()) &&
+            this.extraDatas.MatchData!.length > 1
+            ) {
+              this.matchEntry.push(p)
+            }
           }
         }
 
@@ -1204,7 +1199,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
           this.clearOptionBGColorAndChecked(e)
           this.setBGandCheckedForMatch(completeAutoMatch)
           this.matchFlag = true
-        } else {
+        } else if (this.properties.MultiSelect !== 2) {
           this.matchFlag = false
         }
         break
@@ -1212,49 +1207,79 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     }
   }
   if (this.properties.MatchEntry === 1 && (e.key === 'Backspace' || !this.matchFlag)) {
-    for (let point = 0; point < tempPath.length; point++) {
-      const tbody = tempPath[point] as HTMLDivElement
-      if (tbody.className === 'table-body') {
-        if (this.keyStop && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
-          setTimeout(() => {
-            let singleMatch = tbody.childNodes[0] as HTMLDivElement
-            this.clearOptionBGColorAndChecked(e)
-            this.setBGandCheckedForMatch(singleMatch)
-          }, 2000)
+    if (this.properties.MultiSelect === 0) {
+      for (let point = 0; point < tempPath.length; point++) {
+        const tbody = tempPath[point] as HTMLDivElement
+        if (tbody.className === 'table-body') {
+          if (this.keyStop && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
+            setTimeout(() => {
+              let singleMatch = tbody.childNodes[0] as HTMLDivElement
+              this.clearOptionBGColorAndChecked(e)
+              this.setBGandCheckedForMatch(singleMatch)
+            }, 2000)
+          }
+          break
         }
-        break
       }
     }
   }
   if (e.key === 'ArrowUp') {
-    for (let point = 0; point < tempPath.length; point++) {
-      const element = tempPath[point] as HTMLDivElement
-      if (element.className === 'table-body') {
-        for (let index = 0; index < element.childNodes.length; index++) {
-          const ei = element.childNodes[index] as HTMLDivElement
-          if (ei.style.backgroundColor === 'rgb(0, 120, 215)' && index !== 0) {
-            this.clearOptionBGColorAndChecked(e)
-            const ele = element.childNodes[--index] as HTMLDivElement
-            this.setBGandCheckedForMatch(ele)
-          } else if (index === 0) {
-            this.setBGandCheckedForMatch(ei)
+    if (this.properties.MultiSelect === 0 || this.properties.MultiSelect === 1 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
+      for (let point = 0; point < tempPath.length; point++) {
+        const element = tempPath[point] as HTMLDivElement
+        if (element.className === 'table-body') {
+          for (let index = 0; index < element.childNodes.length; index++) {
+            const ei = element.childNodes[index] as HTMLDivElement
+            if (ei.style.backgroundColor === 'rgb(0, 120, 215)' && index !== 0) {
+              this.clearOptionBGColorAndChecked(e)
+              const ele = element.childNodes[--index] as HTMLDivElement
+              this.setBGandCheckedForMatch(ele)
+              this.prevNode = ele
+            } else if (index === 0) {
+              this.setBGandCheckedForMatch(ei)
+              this.prevNode = ei
+            }
           }
         }
       }
     }
   } else if (e.key === 'ArrowDown') {
-    for (let point = 0; point < tempPath.length; point++) {
-      const element = tempPath[point] as HTMLDivElement
-      if (element.className === 'table-body') {
-        for (let index = 0; index < element.childNodes.length; index++) {
-          const ei = element.childNodes[index] as HTMLDivElement
-          if (ei.style.backgroundColor === 'rgb(0, 120, 215)') {
-            this.clearOptionBGColorAndChecked(e)
-            if (index === element.childNodes.length - 1) {
-              index = element.childNodes.length - 2
+    if (this.properties.MultiSelect === 0 || this.properties.MultiSelect === 1 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
+      for (let point = 0; point < tempPath.length; point++) {
+        const element = tempPath[point] as HTMLDivElement
+        if (element.className === 'table-body') {
+          for (let index = 0; index < element.childNodes.length; index++) {
+            const ei = element.childNodes[index] as HTMLDivElement
+            if (ei.style.backgroundColor === 'rgb(0, 120, 215)') {
+              this.clearOptionBGColorAndChecked(e)
+              if (index === element.childNodes.length - 1) {
+                index = element.childNodes.length - 2
+              }
+              const ele = element.childNodes[++index] as HTMLDivElement
+              this.setBGandCheckedForMatch(ele)
+              this.prevNode = ele
             }
-            const ele = element.childNodes[++index] as HTMLDivElement
-            this.setBGandCheckedForMatch(ele)
+          }
+        }
+      }
+    }
+  }
+  if (e.key === 'ArrowDown') {
+    if (this.properties.MultiSelect === 0 || this.properties.MultiSelect === 1 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
+      for (let point = 0; point < tempPath.length; point++) {
+        const element = tempPath[point] as HTMLDivElement
+        if (element.className === 'table-body') {
+          for (let index = 0; index < element.childNodes.length; index++) {
+            const ei = element.childNodes[index] as HTMLDivElement
+            if (ei.style.backgroundColor === 'rgb(0, 120, 215)') {
+              this.clearOptionBGColorAndChecked(e)
+              if (index === element.childNodes.length - 1) {
+                index = element.childNodes.length - 2
+              }
+              const ele = element.childNodes[++index] as HTMLDivElement
+              this.setBGandCheckedForMatch(ele)
+              this.prevNode = ele
+            }
           }
         }
       }
@@ -1543,7 +1568,7 @@ setBGandCheckedForMatch (singleMatch: HTMLDivElement) {
     singleMatch.style.color = '#FFF'
     if ((this.properties.ListStyle === 1)) {
       const tempNode = singleMatch.childNodes[0].childNodes[0] as HTMLInputElement
-      tempNode.checked = !tempNode.checked
+      tempNode.checked = true
     }
   }
 }
