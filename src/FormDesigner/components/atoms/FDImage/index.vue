@@ -3,6 +3,7 @@
     class="picture"
     :style="cssStyleProperty"
     :title="properties.ControlTipText"
+    @mouseover="updateMouseCursor"
     @keydown.delete="deleteItem"
     @click="imageClick"
   ></div>
@@ -11,15 +12,10 @@
 <script lang="ts">
 import {
   Component,
-  Prop,
-  Model,
-  Emit,
   Mixins,
-  Ref,
   Watch
 } from 'vue-property-decorator'
 import FdControlVue from '@/api/abstract/FormDesigner/FdControlVue'
-import { controlProperties } from '@/FormDesigner/controls-properties'
 
 @Component({
   name: 'FDImage'
@@ -111,10 +107,7 @@ export default class FDImage extends Mixins(FdControlVue) {
       backgroundColor: controlProp.BackStyle
         ? controlProp.BackColor
         : 'transparent',
-      cursor:
-        controlProp.MousePointer !== 0 || controlProp.MouseIcon !== ''
-          ? this.getMouseCursorData
-          : 'default',
+      cursor: this.controlCursor,
       backgroundImage: `url(${controlProp.Picture})`,
       backgroundSize: controlProp.Picture === '' ? '' : this.getSizeMode,
       backgroundRepeat: this.getRepeatData,
@@ -125,7 +118,6 @@ export default class FDImage extends Mixins(FdControlVue) {
   imageClick (event: MouseEvent) {
     if (this.toolBoxSelectControl === 'Select') {
       event.stopPropagation()
-      this.selectedItem(event)
     }
   }
 }

@@ -6,7 +6,7 @@
       :key="groupName.concat(index)"
       :style="getGroupStyle(groupName)"
       :id="groupName"
-      @mousedown="handleMouseDown($event,'drag')"
+      @mousedown="handleMouseDown($event,'drag', groupName)"
       @contextmenu.self.stop="openMenu($event,'control')"
     >
     <div
@@ -30,7 +30,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue, Prop, Watch, Ref } from 'vue-property-decorator'
+import { Component, Prop, Watch } from 'vue-property-decorator'
 import {
   IselectControl,
   IupdateControl,
@@ -92,9 +92,17 @@ export default class GroupControl extends FDCommonMethod {
     EventBus.$on('updasteGroupSize', this.updasteGroupSize)
     EventBus.$on('getGroupSize', this.getGroupSize)
     EventBus.$on('groupElementDrag', this.elementDrag)
+    EventBus.$on('getGroupDisplay', this.getGroupDisplay)
+    EventBus.$on('setGroupSize', this.setGroupSize)
     EventBus.$on('updateGroupStyle', (groupName: string) => {
       this.groupStyle(groupName)
     })
+  }
+  getGroupDisplay (groupName: string, callback: Function) {
+    const findIndex = this.divStyleArray.findIndex((val) => val.groupName === groupName)
+    if (findIndex !== -1) {
+      callback(this.divStyleArray[findIndex].display)
+    }
   }
   destroyed () {
     EventBus.$off('getGroupMoveValue', this.getGroupMoveValue)
@@ -106,6 +114,7 @@ export default class GroupControl extends FDCommonMethod {
     EventBus.$off('getGroupSize', this.getGroupSize)
     EventBus.$off('groupElementDrag', this.elementDrag)
     EventBus.$off('updateGroupStyle')
+    EventBus.$off('setGroupSize', this.setGroupSize)
   }
   convertToGridSize (val: number) {
     const gridSize = 9
@@ -175,6 +184,16 @@ export default class GroupControl extends FDCommonMethod {
       callBack(this.divStyleArray)
     }
   }
+  setGroupSize (callBack: Function) {
+    if (this.divStyleArray.length > 0) {
+      for (const group of this.divStyleArray) {
+        if (group.display === 'block') {
+          this.groupStyle(group.groupName!)
+        }
+      }
+      callBack()
+    }
+  }
   endGroupMoveControl () {
     // if (this.getIsMoveTarget) {
     this.positions.movementX = 0
@@ -210,6 +229,7 @@ export default class GroupControl extends FDCommonMethod {
     if (this.getIsMoveTarget) {
       //   this.moveBorder(event)
       if (event.movementX !== 0 && event.movementY !== 0) {
+        EventBus.$emit('isMousedownMove', true)
         EventBus.$emit('moveControl', event, 'groupControlDrag')
         EventBus.$emit('groupDrag', 'groupdrag')
         this.isMove = true
@@ -347,13 +367,39 @@ export default class GroupControl extends FDCommonMethod {
     }
   }
 
-  handleMouseDown (event: CustomMouseEvent, handler: string) {
+  get isGroupControlelected () {
+    const userData = this.userformData[this.userFormId]
+    let groupId = userData[this.getSelectedControlsDatas![0]].properties.GroupID
+    if (groupId === '') {
+      const containerList = [...this.getContainerList(this.getSelectedControlsDatas![0])]
+      containerList.reverse()
+      for (let i = 1; i < containerList.length; i++) {
+        const type = userData[containerList[i]].type
+        if (type === 'Page') {
+          groupId = userData[this.getContainerList(containerList[i])[0]].properties.GroupID!
+        } else {
+          groupId = userData[containerList[i]].properties.GroupID!
+        }
+        if (groupId !== '') {
+          break
+        }
+      }
+    }
+    return groupId
+  }
+
+  handleMouseDown (event: CustomMouseEvent, handler: string, groupName: string | undefined) {
     if (this.toolBoxSelect === 'Select' && !this.isMouseDownProp) {
+      if (groupName && this.isGroupControlelected === groupName) {
+        this.selectControl({
+          userFormId: this.userFormId,
+          select: { container: this.getContainerList(groupName!), selected: [groupName!] }
+        })
+      }
       event.stopPropagation()
       this.tempEvent = event
       EventBus.$emit('groupDrag', 'NotDrag')
       this.isMove = false
-      this.deActGroupControl()
       this.resizeDiv = handler
       this.positions.clientX = event.clientX
       this.positions.clientY = event.clientY
@@ -539,8 +585,13 @@ export default class GroupControl extends FDCommonMethod {
           dragResizeControl.left = `${left}px`
         } else {
           if (this.resizeDiv.includes('t')) {
-            if (incHeight > 0) {
-              dragResizeControl.top = `${top}px`
+            if (incHeight > -1) {
+              const groupBottom = parseInt(dragResizeControl.height!) + parseInt(dragResizeControl.top!)
+              if (top < groupBottom) {
+                dragResizeControl.top = `${top}px`
+              } else {
+                dragResizeControl.top = `${groupBottom}px`
+              }
             }
             dragResizeControl.height = `${incHeight}px`
           } else if (this.resizeDiv.includes('b')) {
@@ -548,8 +599,13 @@ export default class GroupControl extends FDCommonMethod {
           }
 
           if (this.resizeDiv.includes('l')) {
-            if (incWidth > 0) {
-              dragResizeControl.left = `${left}px`
+            if (incWidth > -1) {
+              const groupRight = parseInt(dragResizeControl.width!) + parseInt(dragResizeControl.left!)
+              if (left < groupRight) {
+                dragResizeControl.left = `${left}px`
+              } else {
+                dragResizeControl.left = `${groupRight}px`
+              }
             }
             dragResizeControl.width = `${incWidth}px`
           } else if (this.resizeDiv.includes('r')) {
@@ -563,29 +619,29 @@ export default class GroupControl extends FDCommonMethod {
           const controlProp = this.userformData[this.userFormId][index]
             .properties
 
-          let top: number =
-            (parseInt(dragResizeControl.height!) * this.topArray[j]) /
+          let top: number = controlProp.Height! < 1 ? parseInt(dragResizeControl.top!)
+            : (parseInt(dragResizeControl.height!) * this.topArray[j]) /
               parseInt(this.initialArray[i].height!) +
             parseInt(this.initialArray[i].top!)
 
-          let height: number =
-            parseInt(dragResizeControl.height!) * this.percheightArray[j]
+          let height: number = controlProp.Height! < 1 ? parseInt(dragResizeControl.height!)
+            : parseInt(dragResizeControl.height!) * this.percheightArray[j]
 
-          let left: number =
-            (parseInt(dragResizeControl.width!) * this.leftArray[j]) /
+          let left: number = controlProp.Width! < 1 ? parseInt(dragResizeControl.left!)
+            : (parseInt(dragResizeControl.width!) * this.leftArray[j]) /
               parseInt(this.initialArray[i].width!) +
             parseInt(this.initialArray[i].left!)
 
-          let width: number =
-            parseInt(dragResizeControl.width!) * this.percwidthArray[j]
+          let width: number = controlProp.Width! < 1 ? parseInt(dragResizeControl.width!)
+            : parseInt(dragResizeControl.width!) * this.percwidthArray[j]
 
-          let right: number =
-            (parseInt(dragResizeControl.width!) * this.leftArray[j]) /
+          let right: number = controlProp.Width! < 1 ? parseInt(dragResizeControl.left!)
+            : (parseInt(dragResizeControl.width!) * this.leftArray[j]) /
               parseInt(this.initialArray[i].width!) +
             parseInt(dragResizeControl.left!)
 
-          let bottom: number =
-            (parseInt(dragResizeControl.height!) * this.topArray[j]) /
+          let bottom: number = controlProp.Height! < 1 ? parseInt(dragResizeControl.top!)
+            : (parseInt(dragResizeControl.height!) * this.topArray[j]) /
               parseInt(this.initialArray[i].height!) +
             parseInt(dragResizeControl.top!)
           if (
@@ -687,7 +743,7 @@ export default class GroupControl extends FDCommonMethod {
     EventBus.$emit('groupDrag', 'NotDrag')
     EventBus.$emit('endMoveControl', 'groupEndMove')
     EventBus.$emit('endGroupMoveControl')
-    if (handler === 'drag') {
+    if (handler === 'drag' && event.which !== 3) {
       const selected = this.selectedControls[this.userFormId].selected
       for (const grpname in selected) {
         if (selected[grpname].startsWith('group')) {
@@ -706,11 +762,32 @@ export default class GroupControl extends FDCommonMethod {
   }
   getGroupEditStyle (groupName: string) {
     const selected = this.selectedControls[this.userFormId].selected
-    const isSelected =
-      selected.length === 1 &&
-      !selected[0].startsWith('group') &&
-      this.userformData[this.userFormId][selected[0]].properties.GroupID ===
-        groupName
+    let type = ''
+    let selGroupId = ''
+    let userData = this.userformData[this.userFormId]
+    type = !selected[0].startsWith('group') ? userData[selected[0]].type : ''
+    selGroupId = type === 'Page'
+      ? userData[this.getContainerList(selected[0])[0]].properties.GroupID!
+      : type !== '' && type !== 'Userform'
+        ? userData[selected[0]].properties.GroupID!
+        : ''
+    let isSelected = selected.length === 1 && !selected[0].startsWith('group') && selGroupId === groupName
+    if (isSelected !== true) {
+      const containerList = this.getContainerList(this.getSelectedControlsDatas![0])
+      for (let i = 0; i <= containerList.length - 1; i++) {
+        const type = userData[containerList[i]].type
+        let groupId = ''
+        if (type === 'Page') {
+          groupId = userData[this.getContainerList(containerList[i])[0]].properties.GroupID!
+        } else {
+          groupId = userData[containerList[i]].properties.GroupID!
+        }
+        isSelected = groupId === groupName
+        if (isSelected) {
+          break
+        }
+      }
+    }
     return isSelected ? 'mainEditDiv' : 'mainDiv'
   }
   getGroupStyle (groupName: string) {
@@ -719,7 +796,10 @@ export default class GroupControl extends FDCommonMethod {
 
   @Watch('selectedControls', { deep: true })
   updateGroupStyle () {
-    const selectedContainer = this.selectedControls[this.userFormId].container[0]
+    const userData = this.userformData[this.userFormId]
+    const container = this.selectedControls[this.userFormId].container[0]
+    const selectedContainer = userData[container].type === 'MultiPage' && userData[container].controls.length > 0
+      ? this.getContainerList(container)[0] : container
     if (selectedContainer !== this.containerId && this.isMove) {
       const selected = this.selectedControls[this.userFormId].selected
       for (const grpname in selected) {
@@ -736,7 +816,8 @@ export default class GroupControl extends FDCommonMethod {
       const selControl = this.selectedControls[this.userFormId].selected
       if (selControl.length >= 1) {
         for (const val of this.getSelectedControlsDatas!) {
-          const groupId = this.userformData[this.userFormId][val].properties.GroupID!
+          const controlData = this.userformData[this.userFormId][val]
+          const groupId = controlData.type === 'Page' ? this.userformData[this.userFormId][this.getContainerList(val)[0]].properties.GroupID! : controlData.properties.GroupID!
           if (groupId) {
             const index = this.divStyleArray.findIndex(
               (p) => p.groupName === groupId
@@ -776,6 +857,20 @@ export default class GroupControl extends FDCommonMethod {
     } else {
       for (const index in this.divStyleArray) {
         this.divStyleArray[index].display = 'none'
+      }
+    }
+    const containerList = this.getContainerList(this.getSelectedControlsDatas![0])
+    for (let i = 0; i <= containerList.length - 1; i++) {
+      const type = userData[containerList[i]].type
+      let groupId = ''
+      if (type === 'Page') {
+        groupId = userData[this.getContainerList(containerList[i])[0]].properties.GroupID!
+      } else {
+        groupId = userData[containerList[i]].properties.GroupID!
+      }
+      const findIndex = this.divStyleArray.findIndex(val => val.groupName === groupId)
+      if (findIndex !== -1) {
+        this.divStyleArray[findIndex].display = 'block'
       }
     }
   }

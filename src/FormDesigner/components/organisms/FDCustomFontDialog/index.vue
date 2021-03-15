@@ -12,7 +12,7 @@
           ...
         </button>
     </div>
-    <FontDialog :fontPropValue="propertyValue" v-if="isOpen"
+    <FontDialog :fontPropValue="propertyValue" v-if="isOpen" :userFormId="userFormId" :getSelectedControlsDatas="getSelectedControlsDatas"
     :isOpen="isOpen" @setFontDialogVisiblilty="setFontDialogVisiblilty"
     @emitFont="emitFont" />
   </div>
@@ -31,6 +31,8 @@ import { EventBus } from '@/FormDesigner/event-bus'
 export default class FDCustomFontDialog extends Vue {
   @Prop({ }) propertyData! : tableData
   @Prop({ default: 'default' }) propertyName!: string
+  @Prop({ required: true, type: String }) public readonly userFormId! : string
+  @Prop({ required: true }) public readonly getSelectedControlsDatas: any
   isOpen: boolean = false
   get propertyValue () {
     return this.propertyData.value

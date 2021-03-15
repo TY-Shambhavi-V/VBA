@@ -1,15 +1,18 @@
 <template>
-  <div @mouseup="onMouseUp" :style="parentDiv" @scroll="updateChildHeightWidth" ref="parentDivRef" >
+<div>
+  <div @mouseup="onMouseUp" :style="parentDiv" ref="parentDivRef" @scroll="updateScroll">
     <drag-selector
       ref="dragSelector"
       :style="dragSelectorStyle"
       :isEditMode="checkIsEditMode"
-      @deActiveControl="event => deActiveControl(event)"
+      :isPropChanged="isPropChanged"
+      @deActiveControl="deActiveControl"
       @dragSelectorControl="event => dragSelectorControl(event)"
       @addControlObj="event => addControlObj(event)"
+      @updateMousedownVar="updateMousedownVar"
     >
-    <div :style="childDiv">
-    <div :style="pictureChildDiv">
+    <div :style="childDiv" ref="childDivRef" @scroll="updateScroll">
+    <div :style="pictureChildDiv" @scroll="updateScroll" ref="pictureDivRef">
       <GroupControl
         :containerId="containerId"
         :userFormId="userFormId"
@@ -22,7 +25,6 @@
       <div
         v-for="control in propControlData.controls"
         :key="control"
-        class="resize"
       >
         <ResizeControl
           ref="resizeControl"
@@ -41,6 +43,15 @@
     </div>
     </drag-selector>
   </div>
+  <div>
+    <div :style="verticalScrollBarStyle" ref="verticalScrollRef" @scroll="updateVerticalScrollTop">
+      <div :style="verticalScrollThumbStyle"></div>
+    </div>
+    <div :style="horizontalScrollBarStyle" ref="horizontalScrollRef"  @scroll="updateHorizontalScrollLeft">
+      <div :style="horizontalScrollThumbStyle"></div>
+    </div>
+  </div>
+</div>
 </template>
 
 <script lang="ts">
@@ -110,11 +121,17 @@ export default class Container extends FDCommonMethod {
   @Ref('dragSelector') readonly dragSelector: dragselector;
   @Ref('contextmenu') readonly contextmenu: HTMLDivElement;
   @Ref('parentDivRef') parentDivRef: HTMLDivElement
+  @Ref('verticalScrollRef') verticalScrollRef: HTMLDivElement
+  @Ref('horizontalScrollRef') horizontalScrollRef: HTMLDivElement
+  @Ref('pictureDivRef') pictureDivRef: HTMLDivElement
+  @Ref('childDivRef') childDivRef: HTMLDivElement
 
   @Prop() createBackgroundString: string
   @Prop() getSizeMode: string
   @Prop() getRepeatData: string
   @Prop() getPosition: string
+  @Prop() dragSelctorWidthHeight: Partial<CSSStyleDeclaration>
+  @Prop() frameTop: number
 
   controlContextMenu: Array<IcontextMenu> = controlContextMenu;
   userformContextMenu: Array<IcontextMenu> = userformContextMenu;
@@ -124,41 +141,31 @@ export default class Container extends FDCommonMethod {
   containerPosition: IMousePosition = { clientX: 0, clientY: 0, movementX: 0, movementY: 0 }
   selectedGroup: string[] = []
   groupStyleArray: Array<IGroupStyle> = [];
-  updatedDragHeight: number = 0;
-  updatedDragWidth: number = 0;
   isControlMove: boolean = false
   mouseUpOnPageTab: boolean = false
+  isScrolling: boolean = false
 
-  updateChildHeightWidth () {
-    if (this.parentDivRef) {
-      const controlProp = this.propControlData.properties
-      const type = this.propControlData.type
-      const ph = type && type === 'Page' ? this.height! : controlProp.Height!
-      const pw = type && type === 'Page' ? this.width! : controlProp.Width!
-      if (this.isControlPasted) {
-        this.updatedDragHeight = Math.abs(this.parentDivRef.scrollHeight - ph!)
-        this.updatedDragWidth = Math.abs(this.parentDivRef.scrollWidth - pw!)
-        this.isControlPasted = false
-      }
-      if (this.isControlMove === false && this.isControlPasted === false) {
-        this.updateControl({
-          userFormId: this.userFormId,
-          controlId: this.controlId,
-          propertyName: 'ScrollLeft',
-          value: this.parentDivRef.scrollLeft
-        })
-        this.updateControl({
-          userFormId: this.userFormId,
-          controlId: this.controlId,
-          propertyName: 'ScrollTop',
-          value: this.parentDivRef.scrollTop
-        })
-      } else {
-        const controlProp = this.propControlData.properties
-        this.$el.scrollTop = controlProp.ScrollTop!
-        this.$el.scrollLeft = controlProp.ScrollLeft!
-        this.updateIsControlMove(false)
-      }
+  updateVerticalScrollTop (e: Event) {
+    if (e.target instanceof HTMLDivElement) {
+      this.parentDivRef.scrollTop = e.target.scrollTop
+      this.updateControl({
+        userFormId: this.userFormId,
+        controlId: this.controlId,
+        propertyName: 'ScrollTop',
+        value: this.parentDivRef.scrollTop
+      })
+    }
+  }
+  updateHorizontalScrollLeft (e: Event) {
+    if (e.target instanceof HTMLDivElement) {
+      this.parentDivRef.scrollLeft = e.target.scrollLeft
+      console.log('e.target.scrollLeft', e.target.scrollLeft, this.parentDivRef.scrollLeft)
+      this.updateControl({
+        userFormId: this.userFormId,
+        controlId: this.controlId,
+        propertyName: 'ScrollLeft',
+        value: this.parentDivRef.scrollLeft
+      })
     }
   }
   /**
@@ -360,7 +367,7 @@ export default class Container extends FDCommonMethod {
           )
         }
         const isPageSelected = !(userData[this.containerId].type === 'Page' && this.getSelectedControlsDatas!.includes(this.getContainerList(this.containerId)[0]))
-        if (mainSelect && !this.getSelectedControlsDatas!.includes(this.containerId) && isPageSelected && !this.mouseUpOnPageTab) {
+        if (userData[mainSelect].type !== 'Userform' && mainSelect && !this.getSelectedControlsDatas!.includes(this.containerId) && isPageSelected && !this.mouseUpOnPageTab) {
           count = count + 1
           let frameCondition: boolean = false
           if (this.handler === 'frameDrag') {
@@ -420,7 +427,7 @@ export default class Container extends FDCommonMethod {
                 if (this.grouphandler === 'groupdrag') {
                   for (let k = 0; k < this.selectedGroup.length; k++) {
                     if (this.selectedGroup[k].startsWith('group')) {
-                      this.createGroup(this.selectedGroup[k])
+                      this.createGroup({ groupId: this.selectedGroup[k], containerId: this.containerId })
                     }
                   }
                 }
@@ -435,7 +442,9 @@ export default class Container extends FDCommonMethod {
                   this.updatedSelect(this.getContainerList(this.selectedSelect[0]), this.selectedControls[this.userFormId].selected)
                 }
               }
-              event.stopPropagation()
+              EventBus.$emit('setGroupSize', () => {
+                event.stopPropagation()
+              })
               document.onmouseup(event)
             }
           }
@@ -464,8 +473,10 @@ export default class Container extends FDCommonMethod {
         : [this.currentSelectedGroup]
     return result
   }
-  createGroup (groupId: string) {
-    this.groupRef.groupStyle(groupId)
+  createGroup (groupObj: IemitGroup) {
+    if (groupObj.containerId === this.containerId) {
+      this.groupRef.groupStyle(groupObj.groupId)
+    }
   }
   muldragControl (val: IDragResizeGroup) {
     this.groupRef.handleMouseDown(val.event, val.handler)
@@ -478,23 +489,67 @@ export default class Container extends FDCommonMethod {
    * @function dragSelectorStyle
    *
    */
+  get fitPictureSizeHeight () {
+    const controlProp = this.propControlData.properties
+    const type = this.propControlData.type
+    if (type === 'Userform') {
+      if (controlProp.ScrollBars === 3) {
+        return 47
+      }
+      return 32
+    } else if (type === 'Frame') {
+      if (controlProp.ScrollBars === 3) {
+        return this.frameTop ? (-this.frameTop + 22) : 22
+      } else if (controlProp.ScrollBars === 2) {
+        return this.frameTop ? (-this.frameTop) + 22 : 7
+      }
+      return this.frameTop ? (-this.frameTop) + 4 : 0
+    } else if (type === 'Page') {
+      if (controlProp.ScrollBars === 3) {
+        return 15
+      }
+      return 0
+    }
+  }
+  get fitPictureSizeWidth () {
+    const controlProp = this.propControlData.properties
+    const type = this.propControlData.type
+    if (type === 'Userform') {
+      if (controlProp.ScrollBars === 3) {
+        return 17
+      } else if (controlProp.ScrollBars === 1) {
+        return 3
+      }
+    } else if (type === 'Frame') {
+      if (controlProp.ScrollBars === 3) {
+        return 20
+      } else {
+        return 4
+      }
+    } else if (type === 'Page') {
+      if (controlProp.ScrollBars === 3) {
+        return 15
+      }
+    }
+    return 0
+  }
   get dragSelectorStyle () {
     const controlProp = this.propControlData.properties
     const type = this.propControlData.type
-    const ph = type && type === 'Page' ? this.height! : this.propControlData.properties.Height!
-    const pw = type && type === 'Page' ? this.width! : this.propControlData.properties.Width!
+    const ph = type && type === 'Page' ? parseInt(this.dragSelctorWidthHeight.height!) - this.fitPictureSizeHeight! : this.propControlData.properties.Height! - this.fitPictureSizeHeight!
+    const pw = type && type === 'Page' ? parseInt(this.dragSelctorWidthHeight.width!) - this.fitPictureSizeWidth! : this.propControlData.properties.Width! - this.fitPictureSizeWidth!
     return {
-      height: ph + this.updatedDragHeight + 'px',
-      width: pw + this.updatedDragWidth + 'px',
-      cursor: type && type === 'Page' ? 'default !important'
-        : this.toolBoxSelect !== 'Select' ? 'crosshair !important' : this.propControlData.properties.MousePointer !== 0 ||
-        this.propControlData.properties.MouseIcon !== ''
-          ? `${this.mouseCursorData} !important`
-          : 'default !important'
+      height: (controlProp.ScrollHeight === 0 || controlProp.ScrollHeight! < ph) ? ph + 'px' : controlProp.ScrollHeight! + 'px',
+      width: (controlProp.ScrollWidth === 0 || controlProp.ScrollWidth! < pw) ? pw + 'px' : controlProp.ScrollWidth! + 'px',
+      cursor: this.toolBoxSelect !== 'Select' ? 'crosshair !important' : '',
+      position: 'absolute',
+      overflow: 'hidden'
     }
   }
+
   get pictureChildDiv () {
     const controlProp = this.propControlData.properties
+    const type = this.propControlData.type
     let backgroundStyle = {}
     if (controlProp.Picture !== '' && controlProp.ScrollBars! > 0) {
       backgroundStyle = {}
@@ -508,18 +563,17 @@ export default class Container extends FDCommonMethod {
     }
     return {
       ...backgroundStyle,
+      height: '100%',
       width: '100%',
-      height: '100%'
+      position: 'absolute',
+      overflow: 'hidden'
     }
   }
   get childDiv () {
     const controlProp = this.propControlData.properties
-    const type = this.propControlData.type
-    const ph = type && type === 'Page' ? this.height! : this.propControlData.properties.Height!
-    const pw = type && type === 'Page' ? this.width! : this.propControlData.properties.Width!
     return {
-      height: (controlProp.ScrollHeight === 0 || controlProp.ScrollHeight! < ph) ? ph + this.updatedDragHeight + 'px' : controlProp.ScrollHeight! + 'px',
-      width: (controlProp.ScrollWidth === 0 || controlProp.ScrollWidth! < pw) ? pw + this.updatedDragWidth + 'px' : controlProp.ScrollWidth! + 'px',
+      height: '100%',
+      width: '100%',
       backgroundImage: controlProp.Picture === ''
         ? this.getSampleDotPattern.backgroundImage
         : this.createBackgroundString,
@@ -531,7 +585,9 @@ export default class Container extends FDCommonMethod {
       backgroundPosition: controlProp.Picture !== ''
         ? this.getPosition
         : this.getSampleDotPattern.backgroundPosition,
-      opactity: controlProp.Picture === '' ? '0' : '1'
+      opactity: controlProp.Picture === '' ? '0' : '1',
+      position: 'absolute',
+      overflow: 'hidden'
     }
   }
   /**
@@ -561,7 +617,7 @@ export default class Container extends FDCommonMethod {
     EventBus.$on('groupDrag', (handler: string) => {
       this.grouphandler = handler
     })
-    EventBus.$on('createGroup', (groupId: string) => {
+    EventBus.$on('createGroup', (groupId: IemitGroup) => {
       this.createGroup(groupId)
     })
     EventBus.$on('updateIsControlMove', (val: boolean) => {
@@ -599,23 +655,123 @@ export default class Container extends FDCommonMethod {
     }
   }
   get parentDiv () {
+    const controlProp = this.propControlData.properties
+    const type = this.propControlData.type
+    const ph = type && type === 'Page' ? parseInt(this.dragSelctorWidthHeight.height!) - this.fitPictureSizeHeight! : this.propControlData.properties.Height! - this.fitPictureSizeHeight!
+    const pw = type && type === 'Page' ? parseInt(this.dragSelctorWidthHeight.width!) - this.fitPictureSizeWidth! : this.propControlData.properties.Width! - this.fitPictureSizeWidth!
     return {
-      width: '100%',
-      height: '100%',
+      width: pw + 'px',
+      height: ph + 'px',
       position: 'absolute',
-      overflowX: this.getScrollBarX,
-      overflowY: this.getScrollBarY
+      overflow: 'hidden'
     }
   }
-  @Watch('propControlData.properties.ScrollLeft')
-  updateScrollLeft () {
-    this.parentDivRef.scrollLeft = this.propControlData.properties.ScrollLeft!
+  get calContainerHeight () {
+    const controlProp = this.propControlData.properties
+    const type = this.propControlData.type
+    const ph = type && type === 'Page' ? this.height! : controlProp.Height!
+    if (type === 'Userform') {
+      if (controlProp.BorderStyle === 1 || controlProp.SpecialEffect! > 0) {
+        return ph! - 49
+      }
+      return ph! - 47
+    } else if (type === 'Frame') {
+      return ph! - 25
+    } else if (type === 'Page') {
+      return parseInt(this.dragSelctorWidthHeight!.height!) - 17
+    }
+    return 0
+  }
+  get calContainerWidth () {
+    const controlProp = this.propControlData.properties
+    const type = this.propControlData.type
+    const pw = type && type === 'Page' ? this.width! : controlProp.Width!
+    if (type === 'Userform') {
+      if (controlProp.BorderStyle === 1 || controlProp.SpecialEffect! > 0) {
+        return pw! - 20
+      }
+      return pw! - 18
+    } else if (type === 'Frame') {
+      if (controlProp.BorderStyle === 1 || controlProp.SpecialEffect! > 0) {
+        return pw! - 21
+      }
+      return pw! - 20
+    } else if (type === 'Page') {
+      return parseInt(this.dragSelctorWidthHeight!.width!) - 17
+    }
+    return 0
+  }
+  get horizontalScrollBarStyle () {
+    let addWidth = ''
+    const controlProp = this.propControlData.properties
+    const type = this.propControlData.type
+    if (this.propControlData.properties.ScrollBars === 1) {
+      if ((type === 'Userform' || type === 'Frame') && (controlProp.BorderStyle === 1 || controlProp.SpecialEffect! > 0)) {
+        addWidth = 'calc(100% + 16px)'
+      } else {
+        addWidth = 'calc(100% + 18px)'
+      }
+    } else {
+      if ((type === 'Userform' || type === 'Frame') && (controlProp.BorderStyle === 1 || controlProp.SpecialEffect! > 0)) {
+        addWidth = 'calc(100%)'
+      } else {
+        addWidth = 'calc(100% + 2px)'
+      }
+    }
+    return {
+      zIndex: 1000,
+      width: addWidth,
+      height: '17px',
+      position: 'absolute',
+      background: '#F5F5F5',
+      overflowX: this.getScrollBarX,
+      display: this.getScrollBarX === 'scroll' ? 'block' : 'none',
+      bottom: '0px'
+      // top: this.calContainerHeight + 'px'
+    }
+  }
+  get verticalScrollBarStyle () {
+    let addHeight = ''
+    if (this.propControlData.properties.ScrollBars === 2) {
+      addHeight = 'calc(100%)'
+    } else {
+      addHeight = 'calc(100% - 15px)'
+    }
+    return {
+      zIndex: 1000,
+      width: '18px',
+      height: addHeight,
+      position: 'absolute',
+      background: '#F5F5F5',
+      overflowY: this.getScrollBarY,
+      visibility: this.getScrollBarY === 'scroll' ? 'visible' : 'hidden',
+      right: '0px'
+      // left: this.calContainerWidth + 'px'
+    }
+  }
+  get verticalScrollThumbStyle () {
+    const controlProp = this.propControlData.properties
+    const type = this.propControlData.type
+    const ph = type && type === 'Page' ? parseInt(this.dragSelctorWidthHeight.height!) - this.fitPictureSizeHeight! : this.propControlData.properties.Height! - this.fitPictureSizeHeight!
+    return {
+      height: (controlProp.ScrollHeight === 0 || controlProp.ScrollHeight! < ph) ? ph + 'px' : controlProp.ScrollHeight! + 'px'
+    }
+  }
+  get horizontalScrollThumbStyle () {
+    const controlProp = this.propControlData.properties
+    const type = this.propControlData.type
+    const pw = type && type === 'Page' ? parseInt(this.dragSelctorWidthHeight.width!) - this.fitPictureSizeWidth! : this.propControlData.properties.Width! - this.fitPictureSizeWidth!
+    return {
+      height: '17px',
+      width: (controlProp.ScrollWidth === 0 || controlProp.ScrollWidth! < pw) ? pw + 'px' : controlProp.ScrollWidth! + 'px'
+    }
+  }
+  updateMousedownVar (e: MouseEvent) {
+    this.mouseDownContainer = this.containerId
+    this.mouseDownEvent = e
+    this.isDargMouseDown = true
   }
 
-  @Watch('propControlData.properties.ScrollTop')
-  updateScrollTop () {
-    this.parentDivRef.scrollTop = this.propControlData.properties.ScrollTop!
-  }
   @Emit('deActiveControl')
   deActiveControl (event: MouseEvent) {
     return event
@@ -631,27 +787,23 @@ export default class Container extends FDCommonMethod {
   updateIsControlMove (val: boolean) {
     this.isControlMove = val
   }
-  @Watch('propControlData.properties.ScrollWidth')
+  @Watch('propControlData.properties.ScrollLeft')
   updateChildWidth () {
-    if (this.propControlData.properties.ScrollWidth! < this.propControlData.properties.ScrollLeft!) {
-      this.updateControl({
-        userFormId: this.userFormId,
-        controlId: this.controlId,
-        propertyName: 'ScrollLeft',
-        value: 0
-      })
-    }
+    this.parentDivRef.scrollLeft = this.propControlData.properties.ScrollLeft!
+    this.horizontalScrollRef.scrollLeft = this.propControlData.properties.ScrollLeft!
   }
-  @Watch('propControlData.properties.ScrollHeight')
+  @Watch('propControlData.properties.ScrollTop')
   updateChildHeight () {
-    if (this.propControlData.properties.ScrollHeight! < this.propControlData.properties.ScrollTop!) {
-      this.updateControl({
-        userFormId: this.userFormId,
-        controlId: this.controlId,
-        propertyName: 'ScrollTop',
-        value: 0
-      })
-    }
+    this.parentDivRef.scrollTop = this.propControlData.properties.ScrollTop!
+    this.verticalScrollRef.scrollTop = this.propControlData.properties.ScrollTop!
+  }
+  updateScroll (e: MouseEvent) {
+    this.pictureDivRef.scrollTop = 0
+    this.parentDivRef.scrollTop = this.propControlData.properties.ScrollTop!
+    this.childDivRef.scrollTop = 0
+    this.pictureDivRef.scrollLeft = 0
+    this.parentDivRef.scrollLeft = this.propControlData.properties.ScrollLeft!
+    this.childDivRef.scrollLeft = 0
   }
 }
 </script>
@@ -659,14 +811,5 @@ export default class Container extends FDCommonMethod {
 <style scoped>
 :focus {
   outline: none;
-}
-.dragSelector {
-  visibility: hidden;
-}
-.dragSelector > .resize {
-  visibility: visible;
-}
-.dragSelector > .group {
-  visibility: visible;
 }
 </style>

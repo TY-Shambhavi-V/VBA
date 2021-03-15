@@ -9,13 +9,14 @@
     @mousedown="addEventCustomCallback"
     @keydown.enter.prevent="setContentEditable($event, true)"
     @click="labelClick"
+    @mouseover="updateMouseCursor"
     @contextmenu="isEditMode ? openTextContextMenu($event): parentConextMenu($event)"
   >
     <div id="logo" ref="logoRef" :style="reverseStyle">
     <img v-if="properties.Picture" id="img" :src="properties.Picture" draggable="false" :style="[imageProperty,imagePos]" ref="imageRef">
     <div v-if="!syncIsEditMode" id="label" ref="textSpanRef" :style="labelStyle" >
        <span :style="spanStyleObj">{{ computedCaption.afterbeginCaption }}</span>
-          <span class="spanClass" :style="spanStyleObj">{{
+          <span class="spanClass" :style="spanClassStyleObj">{{
             computedCaption.acceleratorCaption
           }}</span>
           <span :style="spanStyleObj">{{ computedCaption.beforeendCaption }}</span>
@@ -131,10 +132,7 @@ export default class FDLabel extends Mixins(FdControlVue) {
       wordBreak: controlProp.WordWrap ? 'break-all' : 'normal',
       color:
         controlProp.Enabled === true ? controlProp.ForeColor : this.getEnabled,
-      cursor:
-        controlProp.MousePointer !== 0 || controlProp.MouseIcon !== ''
-          ? this.getMouseCursorData
-          : 'default',
+      cursor: this.controlCursor,
       fontFamily: (font.FontStyle! !== '') ? this.setFontStyle : font.FontName!,
       fontSize: `${font.FontSize}px`,
       fontStyle: font.FontItalic || this.isItalic ? 'italic' : '',
@@ -245,7 +243,7 @@ export default class FDLabel extends Mixins(FdControlVue) {
   })
   checkEnabled (newVal: boolean, oldVal: boolean) {
     if (!this.properties.Enabled) {
-      this.imageProperty.filter = 'sepia(0) grayscale(1) blur(3px) opacity(0.2)'
+      this.imageProperty.filter = 'sepia(0) grayscale(1) blur(4px)'
     } else {
       this.imageProperty.filter = ''
     }
@@ -295,16 +293,23 @@ export default class FDLabel extends Mixins(FdControlVue) {
     }
   }
   mounted () {
-    this.$el.focus()
+    this.$el.focus({
+      preventScroll: true
+    })
+    if (this.properties.Picture) {
+      this.positionLogo(this.properties.PicturePosition)
+      this.pictureSize()
+    }
   }
   releaseEditMode (event: KeyboardEvent) {
-    this.$el.focus()
+    this.$el.focus({
+      preventScroll: true
+    })
     this.setContentEditable(event, false)
   }
   labelClick (event: MouseEvent) {
     if (this.toolBoxSelectControl === 'Select') {
       event.stopPropagation()
-      this.selectedItem(event)
       if (this.isEditMode) {
         (this.editableTextRef.$el as HTMLSpanElement).focus()
       }

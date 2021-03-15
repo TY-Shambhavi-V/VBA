@@ -49,26 +49,38 @@
                     <span>Effects</span>
                   </h1>
                   <input
-                    type="checkbox"
-                    class="checkboxClass"
-                    id="checkbox1"
-                    name="StrikeOut"
-                    value="StrikeOut"
-                    @change="fontEffects"
-                    v-model="isFontStrikeOut"
-                  />
-                  <label for="checkbox1">StrikeOut</label>
+        @click="handleChangeForStrike($event, strikeOutRef)"
+        ref="strikeOutRef"
+        id="checkbox1"
+        name="StrikeOut"
+        type="checkbox"
+        @change="fontEffects"
+        :v-model="isFontStrikeOut==='True'?false:true"
+        class="control-input visually-hidden" />
+      <div
+        @click="handleChangeForStrike($event, strikeOutRef)"
+        id="checkbox1"
+        :class="['control-indicator', isFontStrikeOut === 'True' ? 'trueImage' : isFontStrikeOut === '' ? 'disabledImage' : '']"
+      ></div
+    >
+                  <label for="checkbox1" class="labelStyleObj">StrikeOut</label>
                   <br />
                   <input
-                    type="checkbox"
-                    id="checkbox2"
-                    class="inputClass"
-                    name="Underline"
-                    value="Underline"
-                    @change="fontEffects"
-                    v-model="isFontUnderline"
-                  />
-                  <label for="checkbox2">Underline</label>
+        @click="handleChangeForUnderline($event, underlineRef)"
+        ref="underlineRef"
+        id="checkbox2"
+        name="Underline"
+        :v-model="isFontUnderline==='True'?false:true"
+        type="checkbox"
+        @change="fontEffects"
+        class="control-input visually-hidden" />
+      <div
+        @click="handleChangeForUnderline($event, underlineRef)"
+        id="checkbox2"
+        :class="['control-indicator', isFontUnderline === 'True' ? 'trueImage' : isFontUnderline === '' ? 'disabledImage' : '']"
+      ></div
+    >
+                  <label for="checkbox2" class="labelStyleObj">Underline</label>
                 </div>
               </div>
             </div>
@@ -119,7 +131,7 @@
                 <div>
                   Size:
                   <br />
-                  <input type="number" class="font-input-3" :value="this.size" @keydown="validateELetter" @input="setFontSize"/>
+                  <input type="number" class="font-input-3" :value="getSize" @keydown="validateELetter" @input="setFontSize"/>
                   <br />
                   <div class="font-third-frame">
                     <div v-for="size11 in size1" :key="size11">
@@ -195,6 +207,8 @@ import { Component, Vue, Prop, Emit, Ref } from 'vue-property-decorator'
 import FDSVGImage from '@/FormDesigner/components/atoms/FDSVGImage/index.vue'
 import FdDialogDragVue from '@/api/abstract/FormDesigner/FdDialogDragVue'
 import { EventBus } from '@/FormDesigner/event-bus'
+import { Action, State } from 'vuex-class'
+import { IupdateControl } from '@/storeModules/fd/actions'
 
 export interface INewFont {
   [key: string]: string[];
@@ -207,12 +221,22 @@ export interface INewFont {
   }
 })
 export default class FDFontDialog extends FdDialogDragVue {
-  @Prop() fontPropValue: font;
+  @Prop() fontPropValue: fontString;
   @Prop() isOpen: boolean;
+  @Prop({ required: true }) public readonly getSelectedControlsDatas: any
   @Ref('fontDialogRef') fontDialogRef!: HTMLDivElement;
+  @Ref('strikeOutRef') strikeOutRef!: HTMLInputElement;
+  @Ref('underlineRef') underlineRef!: HTMLInputElement;
+  @Prop({ required: true, type: String }) public readonly userFormId! : string
+  @Action('fd/updateControl') updateControl!: (payload: IupdateControl) => void;
 
-  isFontStrikeOut: boolean = false;
-  isFontUnderline: boolean = false;
+  // @State((state) => state.fd.selectedControls) selectedControls!: fdState['selectedControls'];
+  @State((state) => state.fd.userformData) userformData!: userformData;
+
+  isFontStrikeOut: string = 'False';
+  isFontUnderline: string = 'False';
+  tripleStateForStrikeOut: number = 0;
+  tripleStateForUnderline: number = 0;
   tabOrderDialogInitialStyle: ITabOrderDialogInitialStyle = {
     left: '450px',
     top: '20px'
@@ -243,7 +267,16 @@ export default class FDFontDialog extends FdDialogDragVue {
   ];
   newFont: INewFont = newFont;
   temp: Array<string> = newFont.Arial;
-  tempVal: font = {
+  tempVal: fontString = {
+    FontName: 'Arial',
+    FontSize: 10,
+    FontBold: 'False',
+    FontItalic: 'False',
+    FontUnderline: 'False',
+    FontStrikethrough: 'False',
+    FontStyle: 'Arial Narrow Italic'
+  };
+  tempValToDisplay: font = {
     FontName: 'Arial',
     FontSize: 10,
     FontBold: false,
@@ -269,6 +302,145 @@ export default class FDFontDialog extends FdDialogDragVue {
       }
     }
   }
+  get getSize () {
+    if (this.size === -1) {
+      return null
+    } else {
+      return this.size
+    }
+  }
+  handleChangeForStrike (event: MouseEvent, targetRef: HTMLInputElement) {
+    if (event.target instanceof HTMLInputElement) {
+      if (this.getSelectedControlsDatas.length === 1) {
+        const el = event.target.checked
+        if (el === false) {
+          this.isFontStrikeOut = 'False'
+          this.dataDecorator = 'False'
+          this.tempVal.FontStrikethrough = 'False'
+        } else {
+          this.isFontStrikeOut = 'True'
+          this.dataDecorator = 'True'
+          this.tempVal.FontStrikethrough = 'True'
+        }
+      } else {
+        this.tripleStateForStrikeOut++
+        if (this.tripleStateForStrikeOut % 3 === 0) {
+          this.isFontStrikeOut = ''
+        } else {
+          const el = event.target.checked
+          event.target.checked = true
+          if (el === false) {
+            this.isFontStrikeOut = 'False'
+            this.dataDecorator = 'False'
+            this.tempVal.FontStrikethrough = 'False'
+          } else {
+            this.isFontStrikeOut = 'True'
+            this.dataDecorator = 'True'
+            this.tempVal.FontStrikethrough = 'True'
+          }
+        }
+      }
+    } else {
+      if (this.getSelectedControlsDatas.length === 1) {
+        this.strikeOutRef.checked = !this.strikeOutRef.checked
+        const el = this.strikeOutRef.checked
+        if (el === false) {
+          this.isFontStrikeOut = 'False'
+          this.dataDecorator = 'False'
+          this.tempVal.FontStrikethrough = 'False'
+        } else {
+          this.isFontStrikeOut = 'True'
+          this.dataDecorator = 'True'
+          this.tempVal.FontStrikethrough = 'True'
+        }
+      } else {
+        this.tripleStateForStrikeOut++
+        if (this.tripleStateForStrikeOut % 3 === 0) {
+          this.isFontStrikeOut = ''
+        } else {
+          this.strikeOutRef.checked = !this.strikeOutRef.checked
+          const el = this.strikeOutRef.checked
+          if (el === false) {
+            this.isFontStrikeOut = 'False'
+            this.dataDecorator = 'False'
+            this.tempVal.FontStrikethrough = 'False'
+          } else {
+            this.isFontStrikeOut = 'True'
+            this.dataDecorator = 'True'
+            this.tempVal.FontStrikethrough = 'True'
+          }
+        }
+      }
+      this.fontEffects()
+    }
+  }
+
+  handleChangeForUnderline (event: MouseEvent, targetRef: HTMLInputElement) {
+    if (event.target instanceof HTMLInputElement) {
+      if (this.getSelectedControlsDatas.length === 1) {
+        const el = event.target.checked
+        if (el === false) {
+          this.isFontUnderline = 'False'
+          this.dataDecorator = 'False'
+          this.tempVal.FontUnderline = 'False'
+        } else {
+          this.isFontUnderline = 'True'
+          this.dataDecorator = 'True'
+          this.tempVal.FontUnderline = 'True'
+        }
+      } else {
+        this.tripleStateForUnderline++
+        if (this.tripleStateForUnderline % 3 === 0) {
+          this.isFontUnderline = ''
+        } else {
+          const el = event.target.checked
+          event.target.checked = true
+          if (el === false) {
+            this.isFontUnderline = 'False'
+            this.dataDecorator = 'False'
+            this.tempVal.FontUnderline = 'False'
+          } else {
+            this.isFontUnderline = 'True'
+            this.dataDecorator = 'True'
+            this.tempVal.FontUnderline = 'True'
+          }
+        }
+      }
+    } else {
+      if (this.getSelectedControlsDatas.length === 1) {
+        this.underlineRef.checked = !this.underlineRef.checked
+        const el = this.underlineRef.checked
+        if (el === false) {
+          this.isFontUnderline = 'False'
+          this.dataDecorator = 'False'
+          this.tempVal.FontUnderline = 'False'
+        } else {
+          this.isFontUnderline = 'True'
+          this.dataDecorator = 'True'
+          this.tempVal.FontUnderline = 'True'
+        }
+      } else {
+        this.tripleStateForUnderline++
+        if (this.tripleStateForUnderline % 3 === 0) {
+          this.isFontUnderline = ''
+        } else {
+          this.underlineRef.checked = !this.underlineRef.checked
+          const el = this.underlineRef.checked
+          if (el === false) {
+            this.isFontUnderline = 'False'
+            this.dataDecorator = 'False'
+            this.tempVal.FontUnderline = 'False'
+          } else {
+            this.isFontUnderline = 'True'
+            this.dataDecorator = 'True'
+            this.tempVal.FontUnderline = 'True'
+          }
+        }
+      }
+      this.fontEffects()
+    }
+  }
+
   setFontStyle (event : KeyboardEvent) {
     if (event.target instanceof HTMLInputElement) {
       const val = event.target.value
@@ -302,11 +474,11 @@ export default class FDFontDialog extends FdDialogDragVue {
     this.tempVal.FontSize = this.size
   }
   fontEffects () {
-    if (this.isFontStrikeOut === true && this.isFontUnderline === true) {
+    if (this.isFontStrikeOut === 'True' && this.isFontUnderline === 'True') {
       this.dataDecorator = 'underline line-through'
-    } else if (this.isFontStrikeOut === true) {
+    } else if (this.isFontStrikeOut === 'True') {
       this.dataDecorator = 'line-through'
-    } else if (this.isFontUnderline === true) {
+    } else if (this.isFontUnderline === 'True') {
       this.dataDecorator = 'underline'
     } else {
       this.dataDecorator = ''
@@ -358,28 +530,101 @@ export default class FDFontDialog extends FdDialogDragVue {
     return true
   }
   updateFont () {
-    if (this.validateFontSize(this.tempVal.FontSize!)) {
-      if (!this.tempVal.FontName) {
-        this.tempVal.FontName = this.newFont[0][0]
+    if (this.getSelectedControlsDatas.length === 1) {
+      if (this.validateFontSize(this.tempVal.FontSize!)) {
+        if (!this.tempVal.FontName) {
+          this.tempVal.FontName = this.newFont[0][0]
+        }
+        if (!this.tempVal.FontStyle) {
+          this.tempVal.FontStyle = this.newFont[this.tempVal.FontName][0]
+        }
+        if (this.fontWeight === 'bold' && this.fontStyle1 === 'italic') {
+          this.tempVal.FontBold = 'True'
+          this.tempVal.FontItalic = 'True'
+        } else if (this.fontStyle1 === 'italic') {
+          this.tempVal.FontBold = 'False'
+          this.tempVal.FontItalic = 'True'
+        } else if (this.fontWeight === 'bold') {
+          this.tempVal.FontBold = 'True'
+          this.tempVal.FontItalic = 'False'
+        } else {
+          this.tempVal.FontBold = 'False'
+          this.tempVal.FontItalic = 'False'
+        }
+        this.tempValToDisplay.FontName = this.tempVal.FontName
+        this.tempValToDisplay.FontSize = this.tempVal.FontSize
+        this.tempValToDisplay.FontBold = this.tempVal.FontBold !== 'False'
+        this.tempValToDisplay.FontItalic = this.tempVal.FontItalic !== 'False'
+        this.tempValToDisplay.FontUnderline = this.tempVal.FontUnderline !== 'False'
+        this.tempValToDisplay.FontStrikethrough = this.tempVal.FontStrikethrough !== 'False'
+        this.tempValToDisplay.FontStyle = this.tempVal.FontStyle
+        this.emitFont(this.tempValToDisplay)
+        this.setFontDialogVisiblilty(false)
       }
-      if (!this.tempVal.FontStyle) {
-        this.tempVal.FontStyle = this.newFont[this.tempVal.FontName][0]
+    } else {
+      let fontSize = ''
+      let initialFont = { ...this.tempVal }
+      for (let index = 0; index < this.getSelectedControlsDatas.length; index++) {
+        const currentControlFontObj = this.userformData[this.userFormId][this.getSelectedControlsDatas[index]].properties.Font!
+        if (this.validateFontSize(this.tempVal.FontSize!)) {
+          if (this.fontWeight === 'bold' && this.fontStyle1 === 'italic') {
+            this.tempVal.FontBold = 'True'
+            this.tempVal.FontItalic = 'True'
+          } else if (this.fontStyle1 === 'italic') {
+            this.tempVal.FontBold = 'False'
+            this.tempVal.FontItalic = 'True'
+          } else if (this.fontWeight === 'bold') {
+            this.tempVal.FontBold = 'True'
+            this.tempVal.FontItalic = 'False'
+          } else {
+            this.tempVal.FontBold = currentControlFontObj.FontBold ? 'True' : 'False'
+            this.tempVal.FontItalic = currentControlFontObj.FontItalic ? 'True' : 'False'
+          }
+          if (initialFont.FontName === '') {
+            this.tempVal.FontName =
+            currentControlFontObj.FontName
+          }
+          if (initialFont.FontSize === -1) {
+            this.tempVal.FontSize =
+            currentControlFontObj.FontSize
+          }
+          if (initialFont.FontBold === '') {
+            this.tempVal.FontBold =
+            currentControlFontObj.FontBold ? 'True' : 'False'
+          }
+          if (initialFont.FontItalic === '') {
+            this.tempVal.FontItalic =
+            currentControlFontObj.FontItalic ? 'True' : 'False'
+          }
+          if (initialFont.FontUnderline === '') {
+            this.tempVal.FontUnderline =
+            currentControlFontObj.FontUnderline ? 'True' : 'False'
+          }
+          if (initialFont.FontStrikethrough === '') {
+            this.tempVal.FontStrikethrough =
+            currentControlFontObj.FontStrikethrough ? 'True' : 'False'
+          }
+          if (initialFont.FontStyle === '') {
+            this.tempVal.FontStyle =
+            currentControlFontObj.FontStyle
+          }
+          this.tempValToDisplay.FontName = this.tempVal.FontName
+          this.tempValToDisplay.FontSize = this.tempVal.FontSize
+          this.tempValToDisplay.FontBold = this.tempVal.FontBold !== 'False'
+          this.tempValToDisplay.FontItalic = this.tempVal.FontItalic !== 'False'
+          this.tempValToDisplay.FontUnderline = this.tempVal.FontUnderline !== 'False'
+          this.tempValToDisplay.FontStrikethrough = this.tempVal.FontStrikethrough !== 'False'
+          this.tempValToDisplay.FontStyle = this.tempVal.FontStyle
+          const finalFontObj = { ...this.tempValToDisplay }
+          this.updateControl({
+            userFormId: this.userFormId,
+            controlId: this.getSelectedControlsDatas[index],
+            propertyName: 'Font',
+            value: finalFontObj
+          })
+          this.setFontDialogVisiblilty(false)
+        }
       }
-      if (this.fontWeight === 'bold' && this.fontStyle1 === 'italic') {
-        this.tempVal.FontBold = true
-        this.tempVal.FontItalic = true
-      } else if (this.fontStyle1 === 'italic') {
-        this.tempVal.FontBold = false
-        this.tempVal.FontItalic = true
-      } else if (this.fontWeight === 'bold') {
-        this.tempVal.FontBold = true
-        this.tempVal.FontItalic = false
-      } else {
-        this.tempVal.FontBold = false
-        this.tempVal.FontItalic = false
-      }
-      this.emitFont(this.tempVal)
-      this.setFontDialogVisiblilty(false)
     }
   }
   @Emit('emitFont')
@@ -407,8 +652,35 @@ export default class FDFontDialog extends FdDialogDragVue {
       'text-decoration': `${this.dataDecorator}`
     }
   }
+
+  get getCheckStyleForStrikeOut () {
+    if (this.isFontStrikeOut === 'True') {
+      return 'trueImage'
+    } else if (this.isFontStrikeOut === '') {
+      return 'disabledImage'
+    } else {
+      return ''
+    }
+  }
+
+  get getCheckStyleForUnderline () {
+    if (this.isFontUnderline === 'True') {
+      return 'trueImage'
+    } else if (this.isFontUnderline === '') {
+      return 'disabledImage'
+    } else {
+      return ''
+    }
+  }
   mounted () {
-    this.tempVal = { ...this.fontPropValue }
+    const initialFont: fontString = this.fontPropValue
+    this.tempVal.FontName = initialFont.FontName
+    this.tempVal.FontSize = initialFont.FontSize
+    this.tempVal.FontStyle = initialFont.FontStyle
+    this.tempVal.FontBold = typeof (initialFont.FontBold!) === 'boolean' ? initialFont.FontBold ? 'True' : 'False' : initialFont.FontBold
+    this.tempVal.FontItalic = typeof (initialFont.FontItalic!) === 'boolean' ? initialFont.FontItalic ? 'True' : 'False' : initialFont.FontItalic
+    this.tempVal.FontStrikethrough = typeof (initialFont.FontStrikethrough!) === 'boolean' ? initialFont.FontStrikethrough ? 'True' : 'False' : initialFont.FontStrikethrough
+    this.tempVal.FontUnderline = typeof (initialFont.FontUnderline!) === 'boolean' ? initialFont.FontUnderline! ? 'True' : 'False' : initialFont.FontUnderline
     this.font = this.tempVal.FontName
     this.fontStyle = this.tempVal.FontStyle
     this.isFontStrikeOut = this.tempVal.FontStrikethrough!
@@ -748,4 +1020,43 @@ h1 {
 .nestedButtonClass {
   outline: 1px solid black;
 }
+
+.visually-hidden {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+}
+
+.control-indicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 1px;
+  background-color: white;
+  border: 1px inset grey;
+}
+
+ .trueImage {
+  background-image: url(../../../../assets/checkmark.png);
+  background-size: 8px;
+  background-position: center;
+  background-repeat: no-repeat;
+ }
+
+ .disabledImage {
+  background-image: url(../../../../assets/checkmarkdisabled.png);
+  background-size: 8px;
+  background-position: center;
+  background-repeat: no-repeat;
+ }
+
+ .labelStyleObj {
+   position: relative;
+   top: -2px;
+ }
 </style>

@@ -3,6 +3,7 @@
   <fieldset
     class="fieldset"
     :style="cssStyleProperty"
+    @mouseover="updateMouseCursor"
     :title="properties.ControlTipText"
     :tabindex="properties.TabIndex"
     @keydown.ctrl.exact.stop="selectMultipleCtrl($event,true)"
@@ -10,11 +11,11 @@
     @keydown.shift.exact.stop="selectMultipleCtrl($event,true)"
     @keydown.delete.stop.exact="deleteFrame"
     @keydown.enter.exact="setContentEditable($event, true)"
-    @contextmenu.stop="showContextMenu($event, controlId, controlId, 'container', isEditMode)"
+    @contextmenu="showContextMenu($event, controlId, controlId, 'container', isEditMode)"
     @keyup.stop="selectMultipleCtrl($event, false)"
   >
     <legend ref="fieldsetRef" :style="legendCssStyleProperty">{{ properties.Caption }}</legend>
-    <div :style="scrollSize" ref="frame" >
+    <div :style="scrollSize()" ref="frame" >
       <div>
       <Container
       :style="frameContainerStyleObj"
@@ -33,6 +34,7 @@
       @deActiveControl="deActControl"
       @dragSelectorControl="dragSelectorControl"
       @addControlObj="addContainerControl"
+      :frameTop="parseInt(scrollSize().top)"
       />
       </div>
   </div>
@@ -85,13 +87,16 @@ export default class FDFrame extends Mixins(FdContainerVue) {
   protected get frameContainerStyleObj (): Partial<CSSStyleDeclaration> {
     const scale = (this.properties.Zoom!) / 100
     return {
-      transform: `scale(${scale})`,
-      transformOrigin: `top left`
+      // transform: `scale(${scale})`,
+      // transformOrigin: `top left`,
+      // height: '100%',
+      // width: '100%'
     }
   }
 
   mounted () {
-    // this.scrollLeftTop(this.data)
+    this.scrollTopCalculate()
+    this.scrollSize()
     if (this.fieldsetRef) {
       this.captionHeight = this.fieldsetRef.offsetHeight!
     }
@@ -99,6 +104,8 @@ export default class FDFrame extends Mixins(FdContainerVue) {
 
   @Watch('properties.Caption')
   captionValidate () {
+    this.scrollTopCalculate()
+    this.scrollSize()
     Vue.nextTick(() => {
       if (this.properties.Caption === '') {
         this.captionHeight = 0
@@ -108,8 +115,20 @@ export default class FDFrame extends Mixins(FdContainerVue) {
     })
   }
 
+  @Watch('properties.Width')
+  widthvalidate () {
+    this.scrollSize()
+  }
+
+  @Watch('properties.Height')
+  heightvalidate () {
+    this.scrollSize()
+  }
+
   @Watch('properties.Font', { deep: true })
   updateFont () {
+    this.scrollTopCalculate()
+    this.scrollSize()
     Vue.nextTick(() => {
       this.captionHeight = this.fieldsetRef.offsetHeight!
     })
@@ -133,7 +152,7 @@ export default class FDFrame extends Mixins(FdContainerVue) {
     const controlProp = this.data.properties
     return {
       backgroundColor: controlProp.BackColor,
-      width: `${controlProp.Width}px`,
+      width: `${controlProp.Width! - 0.5}px`,
       height: `${controlProp.Height}px`,
       overflow: 'hidden'
     }
@@ -170,9 +189,7 @@ export default class FDFrame extends Mixins(FdContainerVue) {
       height: `${controlProp.Height}px`,
       padding: '0px',
       outline: 'none',
-      cursor: controlProp.MousePointer !== 0 || controlProp.MouseIcon !== ''
-        ? `${this.getMouseCursorData} !important`
-        : 'default !important',
+      cursor: this.controlCursor,
       fontFamily: font.FontStyle! !== '' ? this.setFontStyle : font.FontName!,
       fontSize: `${font.FontSize}px`,
       fontStyle: font.FontItalic || this.isItalic ? 'italic' : '',
@@ -214,6 +231,8 @@ export default class FDFrame extends Mixins(FdContainerVue) {
     return {
       position: 'sticky',
       top: '0px',
+      color:
+        controlProp.Enabled === true ? controlProp.ForeColor : this.getEnabled,
       background: controlProp.BackColor,
       whiteSpace: 'pre',
       wordBreak: 'normal',
@@ -222,13 +241,21 @@ export default class FDFrame extends Mixins(FdContainerVue) {
       zIndex: '1'
     }
   }
-  get scrollSize () {
+  scrollSize () {
     const controlProp = this.data.properties!
     return {
       width: `${controlProp.Width! - 3}px`,
       height: this.fieldsetRef ? (controlProp.Height! - (this.captionHeight / 2) - 2) + 'px' : '100%',
       position: 'relative',
-      top: this.fieldsetRef && this.properties.Caption !== '' ? '-' + ((this.captionHeight / 2) - 1) + 'px' : ''
+      top: this.scrollTopCalculate()
+    }
+  }
+
+  scrollTopCalculate () {
+    if (this.fieldsetRef && this.properties.Caption !== '') {
+      return '-' + ((this.captionHeight / 2) - 1) + 'px'
+    } else {
+      return ''
     }
   }
   get scrollStyle () {
@@ -240,7 +267,10 @@ export default class FDFrame extends Mixins(FdContainerVue) {
   }
 
   showContextMenu (e: MouseEvent, parentID: string, controlID: string, type: string, mode: boolean) {
-    EventBus.$emit('contextMenuDisplay', event, parentID, controlID, type, mode)
+    if (this.isEditMode) {
+      e.stopPropagation()
+      EventBus.$emit('contextMenuDisplay', e, parentID, controlID, type, mode)
+    }
   }
 
   dragSelectorControl (event: MouseEvent) {
@@ -252,10 +282,19 @@ export default class FDFrame extends Mixins(FdContainerVue) {
   frameMouseDown (e: MouseEvent) {
     if (e.which !== 3) {
       EventBus.$emit('isEditMode', this.isEditMode)
-      this.selectedItem(e)
       const selContainer = this.selectedControls[this.userFormId].container[0]
       if (selContainer === this.controlId) {
-        this.deActiveControl()
+        const previousEditMode: boolean = this.isEditMode
+        const controlType: string = this.userformData[this.userFormId][this.controlId].type
+        if (this.selMultipleCtrl === false && this.activateCtrl === false) {
+          if (previousEditMode) {
+            this.updateEditMode(previousEditMode)
+          }
+          this.selectControl({
+            userFormId: this.userFormId,
+            select: { container: controlType === 'Userform' ? [this.controlId] : this.getContainerList(this.controlId), selected: [this.controlId] }
+          })
+        }
       } else {
         return null
       }
@@ -293,7 +332,7 @@ export default class FDFrame extends Mixins(FdContainerVue) {
   }
   addContainerControl (event: MouseEvent) {
     if (!this.isEditMode && this.selMultipleCtrl === false && this.activateCtrl === false) {
-      this.selectedItem(event)
+      // this.selectedItem(event)
     } else {
       this.addControlObj(event, this.controlId)
     }

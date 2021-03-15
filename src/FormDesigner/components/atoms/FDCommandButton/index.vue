@@ -1,5 +1,5 @@
 <template>
-<div ref="componentRef" :tabindex="properties.TabIndex">
+<div ref="componentRef" :tabindex="properties.TabIndex" @mouseover="updateMouseCursor">
   <button
     class="commandbutton"
     :style="styleObj"
@@ -7,11 +7,6 @@
     :tabindex="properties.TabIndex"
     :title="properties.ControlTipText"
     :runmode="getDisableValue"
-    @blur="
-      () => {
-        isClicked = false;
-      }
-    "
     @mousedown="controlEditMode"
     @keydown.enter.prevent="setContentEditable($event, true)"
     @click="commandButtonClick"
@@ -21,7 +16,7 @@
     <img v-if="properties.Picture" id="img" :src="properties.Picture" draggable="false" :style="[imageProperty,imagePos]" ref="imageRef">
     <div v-if="!syncIsEditMode || isRunMode" :style="labelStyle"  ref="textSpanRef">
       <span :style="spanStyleObj">{{ computedCaption.afterbeginCaption }}</span>
-          <span class="spanClass" :style="spanStyleObj">{{
+          <span class="spanClass" :style="spanClassStyleObj">{{
             computedCaption.acceleratorCaption
           }}</span>
           <span :style="spanStyleObj">{{ computedCaption.beforeendCaption }}</span>
@@ -86,9 +81,6 @@ export default class FDCommandButton extends Mixins(FdControlVue) {
   commandButtonClick (e: Event) {
     if (this.toolBoxSelectControl === 'Select') {
       e.stopPropagation()
-      if (!this.isRunMode) {
-        this.selectedItem(e)
-      }
       if (this.isActivated) {
         if (this.properties.Locked) {
           this.isClicked = false
@@ -144,21 +136,14 @@ export default class FDCommandButton extends Mixins(FdControlVue) {
       borderBottomColor: controlProp.Default ? 'black' : 'lightgray',
       borderLeftColor: controlProp.Default ? 'black' : 'white',
       borderRightColor: controlProp.Default ? 'black' : 'lightgray',
-      outline: controlProp.Enabled
-        ? controlProp.TakeFocusOnClick && this.isClicked
-          ? '1px dotted black'
-          : 'none'
-        : 'none',
+      outline: this.takeFocusOnClickValue(),
       outlineOffset:
         controlProp.TakeFocusOnClick && this.isClicked ? '-5px' : '0px',
       display: display,
       backgroundColor: controlProp.BackStyle ? controlProp.BackColor : 'transparent',
       color:
         controlProp.Enabled === true ? controlProp.ForeColor : this.getEnabled,
-      cursor:
-        controlProp.MousePointer !== 0 || controlProp.MouseIcon !== ''
-          ? this.getMouseCursorData
-          : 'default',
+      cursor: this.controlCursor,
       fontFamily: (font.FontStyle! !== '') ? this.setFontStyle : font.FontName!,
       fontSize: `${font.FontSize}px`,
       fontStyle: font.FontItalic || this.isItalic ? 'italic' : '',
@@ -181,6 +166,18 @@ export default class FDCommandButton extends Mixins(FdControlVue) {
     }
   }
 
+  takeFocusOnClickValue () {
+    const controlProp = this.properties
+    if (controlProp.Enabled && this.isEditMode) {
+      if (controlProp.TakeFocusOnClick && this.isClicked) {
+        return '1px dotted black'
+      } else {
+        return 'none'
+      }
+    } else {
+      return 'none'
+    }
+  }
   /**
    * @description watches changes in propControlData to set autoset when true
    * @function autoSize
@@ -272,7 +269,7 @@ export default class FDCommandButton extends Mixins(FdControlVue) {
   })
   checkEnabled (newVal: boolean, oldVal: boolean) {
     if (!this.properties.Enabled) {
-      this.imageProperty.filter = 'sepia(0) grayscale(1) blur(3px) opacity(0.2)'
+      this.imageProperty.filter = 'sepia(0) grayscale(1) blur(4px)'
     } else {
       this.imageProperty.filter = ''
     }
@@ -281,6 +278,9 @@ export default class FDCommandButton extends Mixins(FdControlVue) {
   setCaretPositionInEditMode () {
     if (this.isEditMode) {
       this.setCaretPosition()
+    }
+    if (!this.isEditMode) {
+      this.isClicked = false
     }
   }
   /**
@@ -325,11 +325,19 @@ export default class FDCommandButton extends Mixins(FdControlVue) {
    * @description mounted initializes the values which are required for the component
    */
   mounted () {
-    this.$el.focus()
+    this.$el.focus({
+      preventScroll: true
+    })
     this.updateAutoSize()
+    if (this.properties.Picture) {
+      this.positionLogo(this.properties.PicturePosition)
+      this.pictureSize()
+    }
   }
   releaseEditMode (event: KeyboardEvent) {
-    this.$el.focus()
+    this.$el.focus({
+      preventScroll: true
+    })
     this.setContentEditable(event, false)
   }
 }

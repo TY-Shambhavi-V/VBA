@@ -6,6 +6,7 @@
     contenteditable="true"
     :readonly="editable === false"
     @input="onInput"
+    @focus="closeTextMenu"
     v-on="eventStoppers()">
   </span>
 </template>
@@ -25,7 +26,9 @@ export default class FDEditableText extends Vue {
 
   mounted () {
     this.labelArea.innerText = this.caption
-    this.labelArea.focus()
+    this.labelArea.focus({
+      preventScroll: true
+    })
   }
 
   eventStoppers () {
@@ -40,7 +43,7 @@ export default class FDEditableText extends Vue {
   keydownHandle (e: KeyboardEvent) {
     e.stopPropagation()
     if (e.key === 'Escape') {
-      this.$emit('releaseEditMode')
+      this.$emit('releaseEditMode', e)
     }
     if (e.key === 'Enter' || e.key === 'Tab') {
       e.preventDefault()
@@ -55,6 +58,9 @@ export default class FDEditableText extends Vue {
       this.labelArea.innerText = updateValue
       this.onInput()
     })
+  }
+  closeTextMenu () {
+    EventBus.$emit('closeMenu')
   }
 }
 </script>

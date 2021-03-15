@@ -21,6 +21,9 @@
         @updateAppearance="updateAppearance"
         @emitFont="emitFont"
         @colorPaletteProp="colorPaletteProp"
+        :userFormId="userFormId"
+        :getSelectedControlsDatas="getSelectedControlsDatas"
+        :isPropChanged="isPropChanged"
       />
     </div>
   </div>
@@ -51,6 +54,7 @@ export default class FDTable extends Vue {
   @Prop({ required: true, type: String }) public readonly userFormId! : string
   @Prop({ required: true }) public readonly getSelectedControlsDatas: any
   @Prop() resultArray: boolean[]
+  @Prop({ required: false }) public readonly isPropChanged: boolean
   @Action('fd/updateControl') updateControl!: (payload: IupdateControl) => void;
   @Action('fd/updateControlExtraData') updateControlExtraData!: (
     payload: IupdateControlExtraData
@@ -59,7 +63,14 @@ export default class FDTable extends Vue {
     payload: IsetChildControls
   ) => void;
   @State((state) => state.fd.selectedControls) selectedControls!: fdState['selectedControls'];
+
+  scrollTopDifference = [[47, 32], [22, 7], [15, 0]]
+  scrollLeftDifference = [[17, 3], [20, 4], [15, 0]]
   eventObjectToAssignPreviousValue: Event
+  pageHeightWidth = {
+    Width: 0,
+    Height: 0
+  }
   get selectedContainer () {
     return this.selectedControls[this.userFormId].container
   }
@@ -173,7 +184,12 @@ export default class FDTable extends Vue {
       } else if (arg.propertyName === 'Index') {
         return this.updatePageIndex(parseInt(arg.value))
       } else if (arg.propertyName === 'Name') {
-        return this.updateName(selected[i], arg.value)
+        if (currentControlData.type !== 'Page') {
+          return this.updateName(selected[i], arg.value)
+        } else {
+          this.updatePropValue(selected[i], arg.propertyName, arg.value)
+          return true
+        }
       } else if (arg.propertyName === 'Value' && (currentControlData.type === 'SpinButton' || currentControlData.type === 'ScrollBar')) {
         return this.updateSpinButtonScrollBarValueProp(selected[i], arg.value)
       } else if (arg.propertyName === 'Value' && (currentControlData.type === 'OptionButton') && arg.value === 'True') {
@@ -559,7 +575,12 @@ export default class FDTable extends Vue {
               this.updateInputBoxValueToPreviousValue(e, propertyName)
             }
           } else {
-            this.emitUpdateProperty(propertyName, propertyValue)
+            if (controlType === 'ComboBox' && this.userformData[this.userFormId][this.getSelectedControlsDatas[0]].properties.Style === 1) {
+              this.updateInputBoxValueToPreviousValue(e, propertyName)
+              this.setInvalidErrorMessage(propertyName, 2, null)
+            } else {
+              this.emitUpdateProperty(propertyName, propertyValue)
+            }
           }
         } else {
           this.eventObjectToAssignPreviousValue = e
@@ -841,6 +862,30 @@ export default class FDTable extends Vue {
           this.updateInputBoxValueToPreviousValue(e, propertyName)
           this.setInvalidErrorMessage(propertyName, 2, null)
         }
+      } else if (propertyName === 'ScrollTop') {
+        if (checkPropertyValue(propertyName, value)) {
+          this.validateScrollTopProp({ propertyName: propertyName, value: value }, e, false)
+        } else {
+          this.updateInputBoxValueToPreviousValue(e, propertyName)
+        }
+      } else if (propertyName === 'ScrollLeft') {
+        if (checkPropertyValue(propertyName, value)) {
+          this.validateScrollLeftProp({ propertyName: propertyName, value: value }, e, false)
+        } else {
+          this.updateInputBoxValueToPreviousValue(e, propertyName)
+        }
+      } else if (propertyName === 'ScrollBars') {
+        if (value === 1) {
+          if (checkPropertyValue('ScrollLeft', value)) {
+            this.validateScrollLeftProp({ propertyName: propertyName, value: value }, e, true)
+          }
+        } else if (value === 2) {
+          if (checkPropertyValue('ScrollTop', value)) {
+            this.validateScrollTopProp({ propertyName: propertyName, value: value }, e, true)
+          }
+        } else {
+          this.emitUpdateProperty(propertyName, value)
+        }
       } else {
         this.emitUpdateProperty(propertyName, value)
       }
@@ -929,6 +974,98 @@ export default class FDTable extends Vue {
       }
     }
     return isValid
+  }
+  get getPageHeight () {
+    EventBus.$emit('getPageHeightWidth', (height: number, width: number) => {
+      this.pageHeightWidth.Height = height
+      this.pageHeightWidth.Width = width
+    })
+    return this.pageHeightWidth.Height!
+  }
+  get getPageWidth () {
+    EventBus.$emit('getPageHeightWidth', (height: number, width: number) => {
+      this.pageHeightWidth.Height = height
+      this.pageHeightWidth.Width = width
+    })
+    return this.pageHeightWidth.Width!
+  }
+  validateScrollLeftProp (arg: IPropControl, e: Event, isScrollBarVisible: boolean) {
+    const selected = this.getSelectedControlsDatas!
+    let isValid: boolean = true
+    for (let i = 0; i < selected.length; i++) {
+      const type = this.userformData[this.userFormId][selected[i]].type
+      const controlProp = this.userformData[this.userFormId][selected[i]].properties
+      const controlPropWidth = type === 'Page' || type === 'MultiPage' ? this.getPageWidth : controlProp.Width
+      let differenceVal = 0
+      if (type === 'Userform') {
+        if (controlProp.ScrollBars === 3) {
+          differenceVal = this.scrollLeftDifference[0][0]
+        } else if (controlProp.ScrollBars === 2) {
+          differenceVal = this.scrollLeftDifference[0][1]
+        }
+      } else if (type === 'Frame') {
+        if (controlProp.ScrollBars === 3) {
+          differenceVal = this.scrollLeftDifference[1][0]
+        } else if (controlProp.ScrollBars === 2) {
+          differenceVal = this.scrollLeftDifference[1][1]
+        }
+      } else if (type === 'Page' || type === 'MultiPage') {
+        if (controlProp.ScrollBars === 3) {
+          differenceVal = this.scrollLeftDifference[2][0]
+        } else if (controlProp.ScrollBars === 2) {
+          differenceVal = this.scrollLeftDifference[2][1]
+        }
+      }
+      if (arg.value > controlProp.ScrollWidth! + differenceVal - controlPropWidth!) {
+        if (selected.length === 1 && !isScrollBarVisible) {
+          this.updateInputBoxValueToPreviousValue(e, arg.propertyName)
+        }
+        if (isScrollBarVisible) {
+          this.updatePropValue(selected[i], arg.propertyName, controlProp.ScrollWidth! + differenceVal - controlPropWidth!)
+        }
+      } else {
+        this.updatePropValue(selected[i], arg.propertyName, arg.value)
+      }
+    }
+  }
+  validateScrollTopProp (arg: IPropControl, e: Event, isScrollBarVisible: boolean) {
+    const selected = this.getSelectedControlsDatas!
+    let isValid: boolean = true
+    for (let i = 0; i < selected.length; i++) {
+      const type = this.userformData[this.userFormId][selected[i]].type
+      const controlProp = this.userformData[this.userFormId][selected[i]].properties
+      const controlPropHeight = type === 'Page' || type === 'MultiPage' ? this.getPageHeight : controlProp.Height
+      let differenceVal = 0
+      if (type === 'Userform') {
+        if (controlProp.ScrollBars === 3) {
+          differenceVal = this.scrollTopDifference[0][0]
+        } else {
+          differenceVal = this.scrollTopDifference[0][1]
+        }
+      } else if (type === 'Frame') {
+        if (controlProp.ScrollBars === 3) {
+          differenceVal = this.scrollTopDifference[1][0]
+        } else if (controlProp.ScrollBars === 2) {
+          differenceVal = this.scrollTopDifference[1][1]
+        }
+      } else if (type === 'Page' || type === 'MultiPage') {
+        if (controlProp.ScrollBars === 3) {
+          differenceVal = this.scrollTopDifference[2][0]
+        } else if (controlProp.ScrollBars === 2) {
+          differenceVal = this.scrollTopDifference[2][1]
+        }
+      }
+      if (arg.value > controlProp.ScrollHeight! + differenceVal - controlPropHeight!) {
+        if (selected.length === 1 && !isScrollBarVisible) {
+          this.updateInputBoxValueToPreviousValue(e, arg.propertyName)
+        }
+        if (isScrollBarVisible) {
+          this.updatePropValue(selected[i], arg.propertyName, controlProp.ScrollHeight! + differenceVal - controlPropHeight!)
+        }
+      } else {
+        this.updatePropValue(selected[i], arg.propertyName, arg.value)
+      }
+    }
   }
   isDecimalNumber (propValue : string) {
     if (propValue.indexOf('.') > -1) {

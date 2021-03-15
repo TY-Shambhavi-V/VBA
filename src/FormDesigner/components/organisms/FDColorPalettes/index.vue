@@ -12,7 +12,6 @@
         id="clear"
         :style="colorPalettesStyleObj"
         @mousedown.prevent="openColorPalette"
-        @click="changeCount()"
       >
         _
       </button>
@@ -37,6 +36,7 @@
             />
             <label for="color-1">Palette</label>
             <div class="content">
+              <div class="inner-content">
               <div class="grid-container">
                 <div
                   class="grid-item1"
@@ -44,8 +44,9 @@
                   :key="i"
                   @click="selectColor(color)"
                   :style="selectedPallete(color.value)"
-                ><div class="grid-inner"></div></div>
+                ></div>
               </div>
+            </div>
             </div>
           </div>
           <div class="tab">
@@ -139,18 +140,18 @@ export default class FDColorPalettes extends Vue {
       this.divscrollTop = divContainer.scrollTop
     }
   }
-  changeCount () {
-    console.log(this.count)
-  }
   selectedPallete (palleteColor: string) {
-    if (this.value === palleteColor) {
+    if (this.value === '#FFFFFF' && palleteColor === '#FFFFFE') {
       return {
         backgroundColor: palleteColor,
-        border: '0.5px solid white',
-        outline: '1px solid black'
+        outline: '1px solid white'
+      }
+    } else if (this.value === palleteColor && this.value !== '#FFFFFF') {
+      return {
+        backgroundColor: palleteColor,
+        outline: '1px solid white'
       }
     } else {
-      console.log('else of the selected color')
       return {
         backgroundColor: palleteColor
       }
@@ -282,19 +283,16 @@ export default class FDColorPalettes extends Vue {
 }
 .grid-container {
   display: grid;
+  position: absolute;
   grid-template-columns: auto auto auto auto auto auto auto auto;
-  width: 10px;
-  padding: 10px;
+  grid-gap: 1px;
+  padding-left: 2px;
+  padding-top: 1px;
 }
 .grid-item1 {
   border: 1px solid rgba(0, 0, 0, 0.8);
   width: 14px;
   height: 14px;
-}
-.grid-inner{
-  width: 13px;
-  height: 13px;
-  border: 0.5px solid black;
 }
 .gridcontainer {
   height: 150px;
@@ -321,5 +319,13 @@ export default class FDColorPalettes extends Vue {
 .displayNameClass {
   position: relative;
   top: 2px;
+}
+.inner-content {
+    background-color: black;
+    position: relative;
+    left: 10px;
+    top: 10px;
+    width: 139px;
+    height: 138px;
 }
 </style>

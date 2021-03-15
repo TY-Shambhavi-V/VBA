@@ -1,5 +1,5 @@
 <template>
-  <div id="app" tabindex="0" @focus="updatefocus" @contextmenu.stop="preventcontextMenu">
+  <div id="app" tabindex="0" @focus="updatefocus" @contextmenu.stop="preventcontextMenu" @keydown.esc="closeMenu">
     <div
       id="right-click-menu"
       :style="contextMenuStyle"
@@ -234,6 +234,12 @@ export default class FDPage extends Vue {
       this.containerId = containerId
       this.handleKeyDown(event)
     })
+    EventBus.$on('closeMenu', () => {
+      if (this.viewMenu) {
+        this.viewMenu = false
+        this.textMenu = false
+      }
+    })
   }
   destroyed () {
     EventBus.$off('contextMenuDisplay')
@@ -241,6 +247,7 @@ export default class FDPage extends Vue {
     EventBus.$off('editModeContextMenu')
     EventBus.$off('openTextContextMenu')
     EventBus.$off('handleKeyDown')
+    EventBus.$off('closeMenu')
   }
 
   editModeContextMenu (e: MouseEvent, mode: boolean, data: controlData) {
@@ -320,24 +327,11 @@ export default class FDPage extends Vue {
   }
   openMenu (e: MouseEvent, parentID: string, controlID: string, type: string, mode: boolean) {
     e.preventDefault()
-    const id = (e.target! as HTMLDivElement).id ? (e.target! as HTMLDivElement).id : ''
     const selected = this.selectedControls[this.userFormId].selected
     const userData = this.userformData[this.userFormId]
     let groupId = ''
-    if (!selected.includes(controlID)) {
-      groupId = userData[controlID].type === 'MultiPage' ? selected[0] : controlID
-      if ('GroupID' in userData[controlID].properties && userData[controlID].properties.GroupID !== '') {
-        groupId = this.userformData[this.userFormId][controlID].properties.GroupID!
-      }
-      if (groupId && !selected.includes(groupId)) {
-        this.selectControl({
-          userFormId: this.userFormId,
-          select: { container: this.getContainerList(groupId), selected: [groupId] }
-        })
-      }
-    }
     const controlType = this.userformData[this.userFormId][controlID].type
-    if (type === 'container' && !groupId.startsWith('group') && selected.length <= 1) {
+    if (type === 'container' && !groupId.startsWith('group')) {
       this.contextMenuType = true
     } else {
       this.contextMenuType = false
@@ -347,7 +341,7 @@ export default class FDPage extends Vue {
     this.contextMenuValue = this.contextMenuType ? userformContextMenu : controlContextMenu
     this.contextMenuHeight = this.contextMenuType ? 145 : 276
     this.viewMenu = true
-    const controlLength = selected[0].startsWith('group') ? this.userformData[this.userFormId][this.controlId].controls.length : this.userformData[this.userFormId][selected[0]].controls.length
+    const controlLength = this.userformData[this.userFormId][this.containerId].controls.length
     const contextMenuData = (type === 'container' && !groupId.startsWith('group') && selected.length <= 1)
       ? this.userformContextMenu
       : this.controlContextMenu
@@ -397,6 +391,7 @@ export default class FDPage extends Vue {
           if (!groupId && selectedGroupArray.length <= 1) {
             val.text = '<u>U</u>ngroup'
             val.id = 'ID_UNGROUP'
+            val.disabled = selected.length > 1
           } else {
             val.text = '<u>G</u>roup'
             val.id = 'ID_GROUP'
@@ -454,8 +449,8 @@ export default class FDPage extends Vue {
     }
     return containerList.length > 0 ? containerList : [this.userFormId]
   }
-  createGroup (groupId: string) {
-    EventBus.$emit('createGroup', groupId)
+  createGroup (groupObj: IemitGroup) {
+    EventBus.$emit('createGroup', groupObj)
   }
   openTextContextMenu (event: MouseEvent) {
     this.textMenu = true
@@ -496,26 +491,16 @@ export default class FDPage extends Vue {
   }
   getCursorPos (event: MouseEvent) {
     const controlType = this.userformData[this.userFormId][this.controlId].type
-    if (controlType === 'ComboBox' || controlType === 'TextBox') {
-      const eventTarget = event.target as HTMLTextAreaElement
-      const difference = eventTarget.selectionEnd - eventTarget.selectionStart
-      if (difference > 0) {
-        return false
-      } else {
+    const isSupported = typeof window.getSelection !== 'undefined'
+    if (isSupported) {
+      const selection = window.getSelection()!
+      if (selection.anchorOffset === selection.focusOffset) {
         return true
+      } else {
+        return false
       }
-    } else {
-      const isSupported = typeof window.getSelection !== 'undefined'
-      if (isSupported) {
-        const selection = window.getSelection()!
-        if (selection.anchorOffset === selection.focusOffset) {
-          return true
-        } else {
-          return false
-        }
-      }
-      return true
     }
+    return true
   }
   handleKeyDown (event: KeyboardEvent) {
     this.mainConextMenu.updateAction(event)

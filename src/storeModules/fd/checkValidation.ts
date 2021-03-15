@@ -37,7 +37,7 @@ export function checkPropertyValue (propertyName: keyof controlProperties, value
       result = value >= -2147483648 && value <= 2147483647
       break
     case 'Name':
-      const nameRegex = /^[a-zA-Z][a-zA-Z0-9_]+$/
+      const nameRegex = /^[a-zA-Z0-9_]+$/
       result = nameRegex.test(value)
       break
     case 'DrawBuffer':
@@ -48,6 +48,8 @@ export function checkPropertyValue (propertyName: keyof controlProperties, value
       break
     case 'ScrollHeight' :
     case 'ScrollWidth' :
+    case 'ScrollTop' :
+    case 'ScrollLeft' :
       result = value >= 0 && value.toString().length < 9
       break
   }

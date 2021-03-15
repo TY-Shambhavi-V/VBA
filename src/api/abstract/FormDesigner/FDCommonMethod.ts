@@ -1,6 +1,7 @@
-import { Component, Prop, Vue } from 'vue-property-decorator'
+import { Component, Emit, Prop, Vue } from 'vue-property-decorator'
 import { Action, State } from 'vuex-class'
 import { IupdateControl, IupdateControlExtraData } from '@/storeModules/fd/actions'
+import { EventBus } from '@/FormDesigner/event-bus'
 
 @Component({
   name: 'FDCommonMethod'
@@ -11,6 +12,11 @@ export default class FDCommonMethod extends Vue {
   @State((state) => state.fd.selectedControls) selectedControls!: fdState['selectedControls'];
   @Action('fd/updateControl') updateControl!: (payload: IupdateControl) => void;
   @Action('fd/updateControlExtraData') updateControlExtraData!: (payload: IupdateControlExtraData) => void;
+  isPropChanged: boolean = false
+  mouseDownEvent: MouseEvent
+  isDargMouseDown: boolean = false
+  mouseDownContainer: string = ''
+  isControlMouseDown: boolean = false
 
   getLowestIndex (tempControls: string[], controlLength: number, propertyType: boolean) {
     let lastControlId = controlLength
@@ -205,5 +211,23 @@ export default class FDCommonMethod extends Vue {
     }
     findControlChild(mainSelect)
     return containerList
+  }
+
+  updateIsPropChanged (val: boolean) {
+    this.isPropChanged = val
+    if (this.isPropChanged !== true && this.isDargMouseDown) {
+      this.isPropChanged = false
+      this.isDargMouseDown = false
+      EventBus.$emit('dragSelMouseDown', this.mouseDownEvent, this.mouseDownContainer)
+    }
+    if (this.isPropChanged !== true && this.isControlMouseDown) {
+      this.isPropChanged = false
+      this.isControlMouseDown = false
+      EventBus.$emit('conSelMouseDown', this.mouseDownEvent, this.mouseDownContainer)
+    }
+  }
+
+  created () {
+    EventBus.$on('updateIsPropChanged', this.updateIsPropChanged)
   }
 }

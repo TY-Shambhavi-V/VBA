@@ -1,7 +1,7 @@
 export const colors = [
   {
     name: '&H00FFFFFF&',
-    value: '#FFFFFF'
+    value: '#FFFFFE'
   },
   {
     name: '&H00C0C0FF&',

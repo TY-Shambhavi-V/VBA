@@ -106,10 +106,14 @@ export default class ResizeUserForm extends FdSelectVue {
     EventBus.$on('focusUserForm', () => {
       this.$el.focus()
     })
+    EventBus.$on('focusNextControlOnAutoTab', () => {
+      this.tabAction(new KeyboardEvent('keydown'))
+    })
   }
   destroyed () {
     EventBus.$off('isEditMode')
     EventBus.$off('focusUserForm')
+    EventBus.$off('focusNextControlOnAutoTab')
   }
   tabAction (event: KeyboardEvent) {
     event.preventDefault()

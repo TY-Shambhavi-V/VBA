@@ -6,6 +6,7 @@
 </template>
 
 <script>
+import { EventBus } from '@/FormDesigner/event-bus'
 import emitter from './mixins/emitter'
 import { throttle } from './utils/utils'
 
@@ -30,6 +31,12 @@ export default {
         return []
       }
     },
+    isPropChanged: {
+      type: Boolean,
+      default () {
+        return false
+      }
+    },
     isEditMode: {
       type: Boolean,
       default () {
@@ -41,6 +48,7 @@ export default {
   data () {
     return {
       dragging: false,
+      getEditMode: false,
       handleMouseMoveThrottled: () => {
       },
       emitChangeThrottled: () => {
@@ -70,6 +78,11 @@ export default {
 
   created () {
     this.registerEvents()
+    EventBus.$on('dragSelMouseDown', (event, container) => {
+      if (this.$parent.containerId === container) {
+        this.$nextTick(() => { this.handleMouseDown(event) })
+      }
+    })
   },
 
   mounted () {
@@ -103,16 +116,29 @@ export default {
     },
 
     handleMouseDown (e) {
-      if (this.isEditMode) {
-        this.cancelAllSelect()
-        this.$nextTick(() => {
-          this.resetPoint(e)
-          this.updatePointData(this.point, e)
-          window.addEventListener('mouseup', this.handleMouseUp)
-          window.addEventListener('mousemove', this.handleMouseMoveThrottled)
-        })
+      if (this.isPropChanged === true) {
+        this.$emit('updateMousedownVar', e)
       }
-      this.$emit('deActiveControl', e)
+      if (this.isPropChanged !== true) {
+        this.getEditMode = false
+        if (this.$parent.propControlData.type !== 'Userform') {
+          EventBus.$emit('getDragSelectorEdit', e, this.$parent.containerId, (editmode) => {
+            this.getEditMode = editmode
+          })
+        } else {
+          this.getEditMode = true
+        }
+        if (this.getEditMode) {
+          this.cancelAllSelect()
+          this.$nextTick(() => {
+            this.resetPoint(e)
+            this.updatePointData(this.point, e)
+            window.addEventListener('mouseup', this.handleMouseUp)
+            window.addEventListener('mousemove', this.handleMouseMoveThrottled)
+          })
+        }
+        this.$emit('deActiveControl', e)
+      }
     },
 
     handleMouseMove (e) {
@@ -163,6 +189,7 @@ export default {
       this.dragging = false
       this.updatePointData(this.point, e)
       this.dragSelectorControl(e)
+      this.addControlObj(e)
       this.resetPoint(e)
       // this.emitChangeThrottled();
       window.removeEventListener('mouseup', this.handleMouseUp)
@@ -264,7 +291,6 @@ export default {
         width: 100%;
         height: 100%;
         position: relative;
-        cursor: crosshair;
         user-select: none;
     }
 

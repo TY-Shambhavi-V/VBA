@@ -6,7 +6,7 @@ import { IaddControl, IchangeToolBoxSelect, IdeleteControl, IselectControl, Iupd
 
 import { controlContextMenu } from '@/FormDesigner/models/controlContextMenuData'
 import { userformContextMenu } from '@/FormDesigner/models/userformContextMenuData'
-import { ControlPropertyData } from '@/FormDesigner/models/ControlsTableProperties/ControlPropertyData.ts'
+import { ControlPropertyData } from '@/FormDesigner/models/ControlsTableProperties/ControlPropertyData'
 import { EventBus } from '@/FormDesigner/event-bus'
 @Component({
   name: 'FdContainerVue'
@@ -204,6 +204,22 @@ export default class FdContainerVue extends FdControlVue {
       value: value
     })
   }
+  getPageContainer (control: string) {
+    const containerList = this.getContainerList(control)
+    let parentContainer = ''
+    const userData = this.userformData[this.userFormId]
+    if (userData[control].type === 'MultiPage') {
+      for (const container of containerList) {
+        if (userData[container].type !== 'Page' && userData[container].type !== 'MultiPage') {
+          parentContainer = container
+          break
+        }
+      }
+    } else {
+      parentContainer = control
+    }
+    return userData[parentContainer]
+  }
   /**
    * @description  add the control to its respective  container
    * @function addControlObj
@@ -215,6 +231,7 @@ export default class FdContainerVue extends FdControlVue {
     if (this.toolBoxSelect !== 'Select' && this.toolBoxSelect !== '') {
       const container = this.userformData[this.userFormId][this.controlId]
       const containerProp = container.properties
+      const fontConatiner = this.getPageContainer(this.controlId).properties
       const type = this.userformData[this.userFormId][this.controlId].type
       const item = this.generateControlId(this.toolBoxSelect)
       const sw = parseInt(this.selectedAreaStyle!.width!)
@@ -227,7 +244,9 @@ export default class FdContainerVue extends FdControlVue {
       if (container.type === 'Userform' || container.type === 'Frame') {
         item.properties.BackColor = this.backColorProp.includes(item.type) ? containerProp.BackColor : item.properties.BackColor
         item.properties.ForeColor = this.foreColorProp.includes(item.type) ? containerProp.ForeColor : item.properties.ForeColor
-        item.properties.Font = this.fontProp.includes(item.type) ? { ...containerProp.Font } : { ...item.properties.Font }
+      }
+      if (container.type === 'Userform' || container.type === 'Frame' || container.type === 'MultiPage') {
+        item.properties.Font = this.fontProp.includes(item.type) ? { ...fontConatiner.Font } : { ...item.properties.Font }
       }
       const controls = item.controls
       item.controls = item.type === 'MultiPage' ? [] : item.controls
@@ -360,6 +379,7 @@ export default class FdContainerVue extends FdControlVue {
         }
       }
     }
+    EventBus.$emit('getCtrlEditMode', this.isEditMode)
   }
   createPageName (pageList: string[]) {
     let lastControlId = 0

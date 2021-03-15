@@ -7,6 +7,7 @@ import { PropType } from 'vue'
 import { Component, Emit, Prop, PropSync, Vue, Watch } from 'vue-property-decorator'
 import { EventBus } from '@/FormDesigner/event-bus'
 import FDEditableText from '@/FormDesigner/components/atoms/FDEditableText/index.vue'
+import { State } from 'vuex-class'
 
 @Component({
   name: 'FdControlVue'
@@ -16,7 +17,7 @@ export default class FdControlVue extends Vue {
   @Prop({ required: true, type: Boolean }) public isEditMode!: boolean
   @PropSync('isEditMode') public syncIsEditMode!: boolean
   @Prop() toolBoxSelectControl: string
-
+  @State((state: rootState) => state.fd.toolBoxSelect) toolBoxSelect!: fdState['toolBoxSelect']
   @Prop({ required: true, type: Object as PropType<controlData> }) public data! : controlData
   @Prop({ required: true, type: String }) public controlId! : string
   @Prop({ default: false }) isActivated: boolean
@@ -62,6 +63,9 @@ export default class FdControlVue extends Vue {
   spinButtonScrollBarDelayInterval: number = 0
   spinButtonScrollBarTimeout: number = 0
   spinButtonScrollBarClickCount: number = 0
+  getSelectionStart: number = 0
+  getSelectionEnd: number = 0
+  controlCursor: string = 'context-menu'
    // global variable to keep track of TripleState when enabled
    protected tripleState:number = 0
 
@@ -616,8 +620,17 @@ export default class FdControlVue extends Vue {
   * @param contentEditable
   */
   setContentEditable (event : KeyboardEvent, contentEditable : boolean) {
-    event.preventDefault()
-    this.setEditMode(contentEditable)
+    if (this.data.type === 'TextBox' || this.data.type === 'ComboBox') {
+      event.preventDefault()
+      this.setEditMode(contentEditable)
+      Vue.nextTick(() => {
+        this.textareaRef.focus()
+        this.textareaRef.setSelectionRange(this.getSelectionStart, this.getSelectionEnd)
+      })
+    } else {
+      event.preventDefault()
+      this.setEditMode(contentEditable)
+    }
   }
 
   /**
@@ -739,9 +752,9 @@ export default class FdControlVue extends Vue {
      const ref = this.data.type!.includes('CheckBox') ? this.checkboxRef : this.optionBtnRef
      if (isBoolean !== '') {
        if (isBoolean) {
-         this.setStyle((ref as HTMLInputElement), (isBoolean as boolean), !(isBoolean as boolean), '#FFFFFF')
+         this.setStyle((ref as HTMLInputElement), (isBoolean as boolean), !(isBoolean as boolean), 'white')
        } else {
-         this.setStyle((ref as HTMLInputElement), false, false, '#FFFFFF')
+         this.setStyle((ref as HTMLInputElement), false, false, 'white')
        }
      } else {
        this.setStyle((ref as HTMLInputElement), true, true, 'rgba(220, 220, 220, 1)')
@@ -773,13 +786,13 @@ export default class FdControlVue extends Vue {
        if (this.tripleState % 3 === 0) {
          this.setStyle(targetRef, true, false, 'rgba(220, 220, 220, 1)')
        } else {
-         this.setStyle(targetRef, el, false, '#FFFFFF')
+         this.setStyle(targetRef, el, false, 'white')
          this.updateDataModel({ propertyName: 'Value', value: el })
        }
      } else {
        this.tripleState++
        this.updateDataModel({ propertyName: 'Value', value: el })
-       this.setStyle(targetRef, el, false, '#FFFFFF')
+       this.setStyle(targetRef, el, false, 'white')
      }
    }
  }
@@ -833,38 +846,21 @@ export default class FdControlVue extends Vue {
  }
 
 /**
- * @description watches changes in properties for BoundColumn
- * @function boundColumnValue
- * @param oldVal previous properties data
- * @param newVal  new/changed properties data
- */
-@Watch('properties.BoundColumn', { deep: true })
- boundColumnValue (newVal:number, oldVal:number) {
-   if (this.properties.BoundColumn! > 0 && this.properties.BoundColumn! < this.extraDatas.RowSourceData!.length) {
-     let tempData = [...this.extraDatas.RowSourceData!]
-    tempData![0][0] = tempData![0][newVal - 1]
-    let tempValue = tempData![0][newVal - 1]
-    this.updateDataModelExtraData({ propertyName: 'RowSourceData', value: tempData })
-    this.updateDataModel({ propertyName: 'Value', value: tempValue })
-   }
- }
-
-/**
  * @description watches changes in properties for TextColumn
  * @function textColumnChange
  * @param oldVal previous properties data
  * @param newVal  new/changed properties data
  */
 @Watch('properties.TextColumn', { deep: true })
-textColumnChange (newVal:number, oldVal:number) {
-  if (newVal > 0 && newVal < this.extraDatas.RowSourceData!.length) {
-    let tempData = [...this.extraDatas.RowSourceData!]
-    let tempValue = tempData![0][newVal - 1]
-    this.updateDataModel({ propertyName: 'Text', value: tempValue })
-  } else {
-    this.updateDataModel({ propertyName: 'Text', value: '' })
-  }
-}
+ textColumnChange (newVal:number, oldVal:number) {
+   if (newVal > 0 && newVal < this.extraDatas.RowSourceData!.length) {
+     let tempData = [...this.extraDatas.RowSourceData!]
+     let tempValue = tempData![0][newVal - 1]
+     this.updateDataModel({ propertyName: 'Text', value: tempValue })
+   } else {
+     this.updateDataModel({ propertyName: 'Text', value: '' })
+   }
+ }
 
 /**
  * @description watches changes in properties for TopIndex
@@ -881,6 +877,40 @@ topIndexCheck (newVal:number, oldVal:number) {
   }
 }
 
+@Watch('isEditMode', { immediate: false })
+callingImage () {
+  this.pictureSize()
+}
+
+imageView () {
+  const picPosLeftRight = [0, 1, 2, 3, 4, 5]
+  if (this.textSpanRef && this.imageRef && this.imageRef.parentElement) {
+    if (this.properties.Width! <= this.imageRef.naturalWidth! && picPosLeftRight.includes(this.properties.PicturePosition!)) {
+      this.textSpanRef.style.display = 'none'
+      this.imageRef.parentElement!.style.alignSelf = ''
+    } else if (this.properties.Width! > this.imageRef.naturalWidth! && picPosLeftRight.includes(this.properties.PicturePosition!)) {
+      this.imageRef.parentElement!.style.alignSelf = 'center'
+      this.textSpanRef.style.display = 'flex'
+      document.removeEventListener('keypress', this.onKeyPress)
+    }
+  }
+  if (this.editableTextRef && this.imageRef && this.imageRef.parentElement) {
+    const el = this.editableTextRef.$el as HTMLSpanElement
+    if (this.properties.Width! <= this.imageRef.naturalWidth && picPosLeftRight.includes(this.properties.PicturePosition!)) {
+      el.style.display = 'none'
+      this.imageRef.parentElement!.style.alignSelf = ''
+      document.addEventListener('keypress', this.onKeyPress)
+    } else if (this.properties.Width! > this.imageRef.naturalWidth && picPosLeftRight.includes(this.properties.PicturePosition!)) {
+      this.imageRef.parentElement!.style.alignSelf = 'center'
+      el.style.display = 'flex'
+      document.removeEventListener('keypress', this.onKeyPress)
+    }
+  }
+}
+onKeyPress (e: KeyboardEvent) {
+  this.updateCaption(this.properties.Caption + e.key)
+}
+
 /**
  * @description updates the dataModel listBox object properties when user clicks
  * @function handleMultiSelect
@@ -889,7 +919,6 @@ topIndexCheck (newVal:number, oldVal:number) {
  *
  */
 handleMultiSelect (e: MouseEvent) {
-  debugger
   if (e.target instanceof HTMLTableCellElement || e.target instanceof HTMLTableRowElement || e.target instanceof HTMLDivElement) {
     this.tempListBoxComboBoxEvent = e
     const targetElement = e.target
@@ -967,7 +996,6 @@ handleMultiSelect (e: MouseEvent) {
                 const node = ele.childNodes[k] as HTMLDivElement
                 const tempNode = node.childNodes[0].childNodes[0] as HTMLInputElement
                 node.style.backgroundColor = 'rgb(0, 120, 215)'
-                node.style.color = '#FFFFFF'
                 if (
                   this.properties.ListStyle === 1 &&
              !tempNode.checked
@@ -1015,17 +1043,9 @@ handleMultiSelect (e: MouseEvent) {
   }
   const a = e.currentTarget! as HTMLDivElement
   this.selectionData[0] = a.innerText
-  a.style.backgroundColor = ''
-  a.style.color = '#000000'
-  this.updateDataModel({ propertyName: 'Value', value: a.innerText })
-  this.updateDataModel({ propertyName: 'Text', value: a.innerText })
-  if (!e.shiftKey) {
-    this.textareaRef.setSelectionRange(0, a.innerText.length, 'forward')
-  }
-  a.style.backgroundColor = 'rgb(0, 120, 215)'
-  a.style.color = '#FFFFFF'
+  this.updateDataModel({ propertyName: 'Value', value: a.innerText[0] })
+  this.updateDataModel({ propertyName: 'Text', value: a.innerText[0] })
 }
-
 timer = 0;
 timeoutVal = 1000;
 
@@ -1046,7 +1066,7 @@ handleKeyup (e: KeyboardEvent) {
  *
  */
 handleExtendArrowKeySelect (e: KeyboardEvent) {
-  // debugger
+  debugger
   window.clearTimeout(this.timer)
   const x = e.key.toUpperCase().charCodeAt(0)
   const tempPath = e.composedPath()
@@ -1240,6 +1260,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
               this.prevNode = ei
             }
           }
+          break
         }
       }
     }
@@ -1260,6 +1281,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
               this.prevNode = ele
             }
           }
+          break
         }
       }
     }
@@ -1275,6 +1297,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     } else {
       currentElement = nextSiblingEvent
     }
+    console.log(eventTarget.innerText)
     if (this.properties.MultiSelect === 2) {
       if (eventTarget.style.backgroundColor !== 'rgb(0, 120, 215)') {
         this.setOptionBGColorAndChecked(e)
@@ -1359,10 +1382,6 @@ setBGColorForNextSibling (e: MouseEvent | KeyboardEvent) {
    nextSiblingEvent.style.backgroundColor === 'rgb(0, 120, 215)'
      ? ''
      : 'rgb(0, 120, 215)'
-    nextSiblingEvent.style.color =
-   nextSiblingEvent.style.color === '#FFFFFF'
-     ? ''
-     : 'FFFFFF'
     if (
       this.properties.ListStyle === 1 &&
    this.properties.MultiSelect === 2
@@ -1386,10 +1405,6 @@ setBGColorForPreviousSibling (e: KeyboardEvent) {
    prevSiblingEvent.style.backgroundColor === 'rgb(0, 120, 215)'
      ? ''
      : 'rgb(0, 120, 215)'
-    prevSiblingEvent.style.color =
-   prevSiblingEvent.style.color === '#FFFFFF'
-     ? ''
-     : '#FFFFFF'
     if (
       this.properties.ListStyle === 1 &&
    this.properties.MultiSelect === 2
@@ -1410,7 +1425,6 @@ clearOptionBGColorAndChecked (e: any) {
       if (e.path[i].className === 'tBodyStyle') {
         for (let j = 0; j < e.path[i].children.length; j++) {
           e.path[i].children[j].style.backgroundColor = ''
-          e.path[i].children[j].style.color = ''
         }
       }
     }
@@ -1427,11 +1441,9 @@ clearOptionBGColorAndChecked (e: any) {
         ) {
           const childNode = element.childNodes[childIndex] as HTMLDivElement
           childNode.style.backgroundColor = ''
-          childNode.style.color = ''
           for (let i = 0; i < childNode.children.length; i++) {
             const a = childNode.children[i] as HTMLDivElement
             a.style.backgroundColor = ''
-            a.style.color = 'black'
           }
           const ChildChecked = childNode.childNodes[0].childNodes[0] as HTMLInputElement
           if (ChildChecked && this.properties.ListStyle === 1) {
@@ -1457,10 +1469,6 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
    currentTargetElement.style.backgroundColor === 'rgb(0, 120, 215)'
      ? ''
      : 'rgb(0, 120, 215)'
-    currentTargetElement.style.color =
-   currentTargetElement.style.color === '#FFFFFF'
-     ? ''
-     : '#FFFFFF'
   }
   if (this.data.type === 'ComboBox') {
     childNodeChecked.checked = !childNodeChecked.checked
@@ -1469,7 +1477,6 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
     const targetEvent = e.target
     if (this.data.type === 'ComboBox') {
       currentTargetElement.style.backgroundColor = ''
-      currentTargetElement.style.color = ''
     }
     if (
       this.properties.ListStyle === 1 &&
@@ -1478,49 +1485,39 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
       childNodeChecked.checked = !childNodeChecked.checked
       if (childNodeChecked.checked === true) {
         currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
-        currentTargetElement.style.color = '#FFFFFF'
       } else {
         currentTargetElement.style.backgroundColor = ''
-        currentTargetElement.style.color = ''
       }
     } else {
       childNodeChecked.checked = !childNodeChecked.checked
       if (this.properties.MultiSelect === 0) {
         currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
-        currentTargetElement.style.color = '#FFFFFF'
         if (this.properties.ListStyle === 1) {
           if (childNodeChecked.checked) {
             currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
-            currentTargetElement.style.color = '#FFFFFF'
           }
         }
       } else if (this.properties.MultiSelect === 1) {
         if (currentTargetElement.style.backgroundColor === 'rgb(0, 120, 215)') {
           currentTargetElement.style.backgroundColor = ''
-          currentTargetElement.style.color = ''
           if (this.properties.ListStyle === 1) {
             if (childNodeChecked.checked) {
               currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
-              currentTargetElement.style.color = '#FFFFFF'
             } else {
               currentTargetElement.style.backgroundColor = ''
-              currentTargetElement.style.color = ''
             }
           }
         } else {
           currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
-          currentTargetElement.style.color = '#FFFFFF'
           if (this.properties.ListStyle === 1) {
             if (childNodeChecked.checked) {
               currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
-              currentTargetElement.style.color = '#FFFFFF'
             }
           }
         }
       } else if (this.properties.MultiSelect === 2) {
         childNodeChecked.checked = true
         currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
-        currentTargetElement.style.color = '#FFFFFF'
       }
     }
   }
@@ -1532,7 +1529,6 @@ unselectBGColorAndchecked (e: KeyboardEvent | MouseEvent) {
   if (this.properties.MultiSelect === 2) {
     childNodeChecked.checked = false
     currentTargetElement.style.backgroundColor = ''
-    currentTargetElement.style.color = ''
   }
 }
 
@@ -1544,7 +1540,6 @@ unselectBGColorAndchecked (e: KeyboardEvent | MouseEvent) {
 setBGandCheckedForMatch (singleMatch: HTMLDivElement) {
   if (singleMatch !== undefined) {
     singleMatch.style.backgroundColor = 'rgb(0, 120, 215)'
-    singleMatch.style.color = '#FFF'
     if ((this.properties.ListStyle === 1)) {
       const tempNode = singleMatch.childNodes[0].childNodes[0] as HTMLInputElement
       tempNode.checked = true
@@ -1621,6 +1616,32 @@ get spanStyleObj () {
     color: !this.properties.Enabled ? 'gray' : ''
   }
 }
+
+get spanClassStyleObj () {
+  const controlProp = this.properties
+  const font: font = controlProp.Font
+    ? controlProp.Font
+    : {
+      FontName: 'Arial',
+      FontSize: 20,
+      FontItalic: true,
+      FontBold: true,
+      FontUnderline: true,
+      FontStrikethrough: true
+    }
+  return {
+    textDecoration:
+      font.FontStrikethrough === true && font.FontUnderline === true
+        ? 'underline line-through'
+        : font.FontUnderline === true
+          ? 'underline'
+          : font.FontStrikethrough === true && controlProp.Accelerator !== ''
+            ? 'line-through underline'
+            : font.FontStrikethrough === true ? 'line-through' : '',
+    color: !this.properties.Enabled ? 'gray' : ''
+  }
+}
+
 positionLogo (value:any) {
   let style = {
     order: Number(),
@@ -1708,12 +1729,15 @@ pictureSize () {
   }
   if (this.properties.Picture) {
     Vue.nextTick(() => {
-      imgStyle.width = this.properties.Width! <= this.imageRef!.naturalWidth ? `${this.properties.Width}px` : 'fit-content'
-      imgStyle.height = this.properties.Height! <= this.imageRef!.naturalHeight ? `${this.properties.Height}px` : 'fit-content'
-      if (this.properties.PicturePosition === 9 || this.properties.PicturePosition === 10 || this.properties.PicturePosition === 11) {
-        this.imageRef.scrollIntoView(true)
+      if (this.imageRef) {
+        imgStyle.width = this.properties.Width! <= this.imageRef!.naturalWidth ? `${this.properties.Width}px` : 'fit-content'
+        imgStyle.height = this.properties.Height! <= this.imageRef!.naturalHeight ? `${this.properties.Height}px` : 'fit-content'
+        if (this.properties.PicturePosition === 9 || this.properties.PicturePosition === 10 || this.properties.PicturePosition === 11) {
+          this.imageRef.scrollIntoView(true)
+        }
+        imgStyle.filter = !this.properties.Enabled ? 'sepia(0) grayscale(1) blur(4px)' : ''
+        this.imageView()
       }
-      imgStyle.filter = !this.properties.Enabled ? 'sepia(0) grayscale(1) blur(3px) opacity(0.2)' : ''
     })
   }
   this.imageProperty = imgStyle
@@ -1819,7 +1843,7 @@ setHeightWidthVariable () {
   if (this.textSpanRef && this.textSpanRef.offsetWidth) {
     labelWidth = this.textSpanRef.offsetWidth
   } else if ((this.editableTextRef && this.editableTextRef.$el as HTMLSpanElement) && (this.editableTextRef && this.editableTextRef.$el as HTMLSpanElement).offsetWidth) {
-    labelWidth = (this.editableTextRef.$el as HTMLSpanElement).offsetWidth
+    labelWidth = (this.editableTextRef.$el as HTMLSpanElement).scrollWidth
   }
   return { picPosLeftRight, picPosTopBottom, controlWidthIncrease, imgHeight, imgWidth, labelHeight, labelWidth }
 }
@@ -1836,5 +1860,29 @@ setCaretPosition () {
       sel.addRange(range)
     }
   })
+}
+updateMouseCursor () {
+  const controlProp = this.properties
+  if (this.toolBoxSelect !== 'Select') {
+    this.controlCursor = 'crosshair !important'
+  } else if (this.data.type === 'Page' || this.data.type === 'MultiPage') {
+    EventBus.$emit('getMouseCursor', this.properties.ID, (pointer: string) => {
+      if (controlProp.ID === this.controlId) {
+        this.controlCursor = pointer
+      }
+    })
+  } else {
+    if (controlProp.MousePointer !== 0 || controlProp.MouseIcon !== '') {
+      this.controlCursor = this.getMouseCursorData
+    } else if (controlProp.MousePointer === 0) {
+      EventBus.$emit('getMouseCursor', this.properties.ID, (pointer: string) => {
+        if (controlProp.ID === this.controlId) {
+          this.controlCursor = pointer
+        }
+      })
+    } else {
+      this.controlCursor = 'default'
+    }
+  }
 }
 }

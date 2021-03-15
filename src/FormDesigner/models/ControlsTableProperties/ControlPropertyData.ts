@@ -8,8 +8,8 @@ export class ControlPropertyData {
     this.data = {
       UserForm: {
         properties: {
-          BackColor: '#ffffff',
-          BorderColor: '#ffffff',
+          BackColor: 'rgba(235, 235, 235)',
+          BorderColor: 'rgb(2 0 0)',
           BorderStyle: 0,
           Caption: 'UserForm1',
           Cycle: 0,
@@ -24,7 +24,7 @@ export class ControlPropertyData {
             FontStrikethrough: false,
             FontStyle: 'Arial Narrow'
           },
-          ForeColor: '#ffffff',
+          ForeColor: 'rgb(2 0 0)',
           Height: 350,
           HelpContextID: 0,
           KeepScrollBarsVisible: 3,
@@ -44,7 +44,7 @@ export class ControlPropertyData {
           ScrollTop: 0,
           ScrollWidth: 0,
           ShowModal: true,
-          SpecilalEffect: 0,
+          SpecialEffect: 0,
           StartUpPosition: 1,
           Tag: '',
           Top: 0,
@@ -63,9 +63,9 @@ export class ControlPropertyData {
         properties: {
           Accelerator: '',
           AutoSize: false,
-          BackColor: '#eeeeee',
+          BackColor: 'rgba(235, 235, 235)',
           BackStyle: 1,
-          BorderColor: '#eeeeee',
+          BorderColor: 'rgba(128, 127, 127, 1.8)',
           BorderStyle: 0,
           Caption: 'Label1',
           ControlTipText: 'helptext',
@@ -79,7 +79,7 @@ export class ControlPropertyData {
             FontStrikethrough: false,
             FontStyle: 'Arial Narrow'
           },
-          ForeColor: '#000000',
+          ForeColor: 'rgb(2 0 0)',
           Height: 18,
           HelpContextID: 0,
           Left: 0,
@@ -91,7 +91,7 @@ export class ControlPropertyData {
           PicturePosition: 7,
           SpecialEffect: 0,
           TabIndex: 0,
-          TabStop: true,
+          TabStop: false,
           Tag: '',
           TextAlign: 0,
           Top: 0,
@@ -119,7 +119,7 @@ export class ControlPropertyData {
         properties: {
           Accelerator: '',
           AutoSize: false,
-          BackColor: '#eeeeee',
+          BackColor: 'rgba(235, 235, 235)',
           BackStyle: 1,
           Caption: 'CommandButton1',
           Cancel: false,
@@ -135,7 +135,7 @@ export class ControlPropertyData {
             FontStrikethrough: false,
             FontStyle: 'Arial Narrow'
           },
-          ForeColor: '#000000',
+          ForeColor: 'rgb(2 0 0)',
           Height: 22,
           HelpContextID: 0,
           Left: 20,
@@ -145,7 +145,7 @@ export class ControlPropertyData {
           Name: 'CommandButton1',
           ID: 'ID_CommandButton1',
           Picture: '',
-          PicturePosition: 12,
+          PicturePosition: 7,
           TabIndex: 11,
           TabStop: true,
           Tag: '',
@@ -167,7 +167,7 @@ export class ControlPropertyData {
           Accelerator: '',
           Alignment: 1,
           AutoSize: false,
-          BackColor: '#eeeeee',
+          BackColor: 'rgba(235, 235, 235)',
           BackStyle: 1,
           Caption: 'CheckBox1',
           ControlTipText: 'helptext',
@@ -182,7 +182,7 @@ export class ControlPropertyData {
             FontStrikethrough: false,
             FontStyle: 'Arial Narrow'
           },
-          ForeColor: '#000000',
+          ForeColor: 'rgb(2 0 0)',
           GroupName: '',
           Height: 18,
           HelpContextID: 0,
@@ -219,9 +219,9 @@ export class ControlPropertyData {
           AutoSize: false,
           AutoTab: false,
           AutoWordSelect: true,
-          BackColor: '#ffffff',
+          BackColor: 'rgba(255, 255, 254)',
           BackStyle: 1,
-          BorderColor: '#818080',
+          BorderColor: 'rgba(128, 127, 127, 1.8)',
           BorderStyle: 0,
           BoundColumn: 1,
           ColumnCount: 1,
@@ -242,7 +242,7 @@ export class ControlPropertyData {
             FontStrikethrough: false,
             FontStyle: 'Arial Narrow'
           },
-          ForeColor: '#000000',
+          ForeColor: 'rgb(0 0 3)',
           Height: 18,
           HelpContextID: 0,
           HideSelection: true,
@@ -283,14 +283,14 @@ export class ControlPropertyData {
           ControlSourceValue: 'c3',
           ColumnHeadsValues: ['column1', 'column2', 'column3'],
           RowSourceData: [
-            ['hello, how are you?', 'k', 'a1'],
-            ['ajay', 'b', 'b2'],
-            ['vijay', 's', 'c3'],
-            ['chandan', 'a', 'd4'],
-            ['google', 'd', 'e5'],
-            ['height', 'wef', 'f6'],
-            ['width', 'awe', 'g7'],
-            ['caption', 'rty', 'h8']
+            ['a', 'k', 'a1'],
+            ['b', 'b', 'b2'],
+            ['c', 's', 'c3'],
+            ['d', 'a', 'd4'],
+            ['e', 'd', 'e5'],
+            ['f', 'wef', 'f6'],
+            ['g', 'awe', 'g7'],
+            ['h', 'rty', 'h8']
           ],
           zIndex: -1
         },
@@ -298,8 +298,8 @@ export class ControlPropertyData {
       },
       Frame: {
         properties: {
-          BackColor: '#eeeeee',
-          BorderColor: '#000000',
+          BackColor: 'rgba(235, 235, 235)',
+          BorderColor: 'rgb(2 0 0)',
           BorderStyle: 0,
           Caption: 'Frame1',
           ControlTipText: '',
@@ -314,7 +314,7 @@ export class ControlPropertyData {
             FontStrikethrough: false,
             FontStyle: 'Arial Narrow'
           },
-          ForeColor: '#000000',
+          ForeColor: 'rgb(2 0 0)',
           Height: 144,
           HelpContextID: 0,
           KeepScrollBarsVisible: 3,
@@ -351,7 +351,7 @@ export class ControlPropertyData {
       Image: {
         properties: {
           AutoSize: false,
-          BackColor: '#eeeeee',
+          BackColor: 'rgba(235, 235, 235)',
           BackStyle: 1,
           BorderColor: 'rgba(128, 127, 127, 1.8)',
           BorderStyle: 1,
@@ -383,8 +383,8 @@ export class ControlPropertyData {
       },
       ListBox: {
         properties: {
-          BackColor: '#ffffff',
-          BorderColor: '#ffffff',
+          BackColor: 'rgba(255, 255, 254)',
+          BorderColor: 'rgba(128, 127, 127, 1.8)',
           BorderStyle: 0,
           BoundColumn: 1,
           ColumnCount: 1,
@@ -402,7 +402,7 @@ export class ControlPropertyData {
             FontStrikethrough: false,
             FontStyle: 'Arial Narrow'
           },
-          ForeColor: '#000000',
+          ForeColor: 'rgb(0 0 3)',
           Height: 150,
           HelpContextID: 0,
           IMEMode: 0,
@@ -457,19 +457,19 @@ export class ControlPropertyData {
         properties: {
           ID: 'ID_MultiPage1',
           Name: 'MultiPage1',
-          BackColor: '#eeeeee',
+          BackColor: 'rgba(235, 235, 235)',
           ControlTipText: '',
           Enabled: true,
           Font: {
             FontName: 'Arial',
-            FontSize: 15,
+            FontSize: 10,
             FontBold: false,
             FontItalic: false,
             FontUnderline: false,
             FontStrikethrough: false,
             FontStyle: 'Arial Narrow'
           },
-          ForeColor: '#111111',
+          ForeColor: 'rgb(2 0 0)',
           Height: 200,
           HelpContextID: 0,
           Left: 40,
@@ -499,7 +499,7 @@ export class ControlPropertyData {
           Accelerator: '',
           Alignment: 1,
           AutoSize: false,
-          BackColor: '#eeeeee',
+          BackColor: 'rgba(235, 235, 235)',
           BackStyle: 1,
           Caption: 'OptionButton1',
           ControlTipText: 'helptext',
@@ -514,7 +514,7 @@ export class ControlPropertyData {
             FontStrikethrough: false,
             FontStyle: 'Arial Narrow'
           },
-          ForeColor: '#000000',
+          ForeColor: 'rgb(2 0 0)',
           GroupName: '',
           Height: 25,
           HelpContextID: 0,
@@ -548,12 +548,12 @@ export class ControlPropertyData {
       },
       ScrollBar: {
         properties: {
-          BackColor: '#eeeeee',
+          BackColor: 'rgba(235, 235, 235)',
           ControlSource: '',
           ControlTipText: 'ScrollBar',
           Delay: 50,
           Enabled: true,
-          ForeColor: '#000000',
+          ForeColor: 'rgb(2 0 0)',
           Height: 180,
           HelpContextID: 0,
           LargeChange: 1,
@@ -585,12 +585,12 @@ export class ControlPropertyData {
       },
       SpinButton: {
         properties: {
-          BackColor: '#eeeeee',
+          BackColor: 'rgba(235, 235, 235)',
           ControlSource: '',
           ControlTipText: 'SpinButton',
           Delay: 50,
           Enabled: true,
-          ForeColor: '#000000',
+          ForeColor: 'rgb(2 0 0)',
           Height: 180,
           HelpContextID: 0,
           Left: 0,
@@ -620,19 +620,19 @@ export class ControlPropertyData {
       },
       TabStrip: {
         properties: {
-          BackColor: '#eeeeee',
+          BackColor: 'rgba(235, 235, 235)',
           ControlTipText: 'TabStrip',
           Enabled: true,
           Font: {
             FontName: 'Arial',
-            FontSize: 15,
+            FontSize: 10,
             FontBold: false,
             FontItalic: false,
             FontUnderline: false,
             FontStrikethrough: false,
             FontStyle: 'Arial Narrow'
           },
-          ForeColor: '#111111',
+          ForeColor: 'rgb(2 0 0)',
           Height: 300,
           HelpContextID: 0,
           Left: 50,
@@ -671,7 +671,8 @@ export class ControlPropertyData {
               Accelerator: ''
             }
           ],
-          zIndex: -1
+          zIndex: -1,
+          tabDataLength: 2
         },
         type: 'TabStrip'
       },
@@ -679,7 +680,7 @@ export class ControlPropertyData {
         properties: {
           Accelerator: '',
           AutoSize: false,
-          BackColor: '#eeeeee',
+          BackColor: 'rgba(235, 235, 235)',
           BackStyle: 1,
           Caption: 'Toggle Button1',
           ControlSource: '',
@@ -694,7 +695,7 @@ export class ControlPropertyData {
             FontStrikethrough: false,
             FontStyle: 'Arial Narrow'
           },
-          ForeColor: '#000000',
+          ForeColor: 'rgb(2 0 0)',
           Height: 60,
           HelpContextID: 0,
           Left: 20,
@@ -761,9 +762,9 @@ export class ControlPropertyData {
           AutoSize: false,
           AutoTab: false,
           AutoWordSelect: true,
-          BackColor: '#ffffff',
+          BackColor: 'rgba(255, 255, 254)',
           BackStyle: 1,
-          BorderColor: '#000000',
+          BorderColor: 'rgba(128, 127, 127, 1.8)',
           BorderStyle: 0,
           ControlSource: '',
           ControlTipText: '',
@@ -782,7 +783,7 @@ export class ControlPropertyData {
             FontStrikethrough: false,
             FontStyle: 'Arial Narrow'
           },
-          ForeColor: '#000000',
+          ForeColor: 'rgb(0 0 3)',
           Height: 18,
           HelpContextID: 0,
           HideSelection: true,

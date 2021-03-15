@@ -12,12 +12,13 @@
           ...
           <input
           ref="fileInputRef"
-      :name="propertyName"
-      :type="propertyType"
-      @change="updateAppearance"
-      :accept="propertyName==='Picture'?'image/gif, image/jpeg, image/x-icon, image/jpg, image/bmp' :
-      'image/gif, image/x-icon, image/bmp'"
-      />
+          :name="propertyName"
+          :type="propertyType"
+          @change="updateAppearance"
+          :accept="propertyName==='Picture'?'image/gif, image/jpeg, image/x-icon, image/jpg, image/bmp' :
+          'image/gif, image/x-icon, image/bmp'"
+          />
+
         </button>
     </div>
     <input
@@ -29,12 +30,14 @@
       @change="updateAppearance"
       @input="updateCaptionProperty"
       @keydown="validateELetter"
+      @focusout="updateInputProp(false)"
     />
   </div>
 </template>
 
 <script lang="ts">
 
+import { EventBus } from '@/FormDesigner/event-bus'
 import { Component, Vue, Prop, Emit, Ref } from 'vue-property-decorator'
 @Component({
   name: 'FDCustomInput',
@@ -43,6 +46,7 @@ import { Component, Vue, Prop, Emit, Ref } from 'vue-property-decorator'
 export default class FDCustomInput extends Vue {
   @Prop() propertyData! : tableData
   @Ref('fileInputRef') fileInputRef!: HTMLInputElement;
+  @Prop({ required: false }) isPropChanged: boolean
 
   @Prop({ default: 'default' }) propertyName!: string
 
@@ -52,6 +56,10 @@ export default class FDCustomInput extends Vue {
 
   get propertyValue () {
     return this.propertyData.value
+  }
+
+  updateInputProp (val: boolean) {
+    EventBus.$emit('updateIsPropChanged', val)
   }
 
   get propertyValues () {
@@ -74,6 +82,7 @@ export default class FDCustomInput extends Vue {
     return e
   }
   updateCaptionProperty (e: Event) {
+    this.updateInputProp(true)
     if (this.propertyName === 'Caption') {
       this.updateAppearance(e)
     } else {

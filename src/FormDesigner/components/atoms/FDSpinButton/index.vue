@@ -29,9 +29,10 @@
           :style="styleButton"
           :runmode="getDisableValue"
           @blur="isClicked = false"
+          @mouseover="updateMouseCursor"
         >
-          <div v-if="checkOtherOrientations()" >
-            <svg version="1.0" xmlns="http://www.w3.org/2000/svg" :style="svgStyleObj" :height="(properties.Height/2 > 60 && properties.Height < 850) ? properties.Height/2 - 45 : properties.Height >= 850 ? 425 : 15" :width="(properties.Width/2 > 60 && properties.Width < 850) ? properties.Width/2 - 45  : properties.Width >= 850 ? 425 : 15"
+          <div v-if="checkOtherOrientations()" :style="svgOuterDivObj">
+            <svg version="1.0" xmlns="http://www.w3.org/2000/svg" :style="svgStyleObj"
         viewBox="0 0 810.000000 460.000000"
         preserveAspectRatio="xMidYMid meet">
           <g :fill="properties.Enabled?properties.ForeColor:'rgb(200,200,200)'"
@@ -45,7 +46,7 @@
           </div>
           <div v-else :style="svgDivObj">
             <svg version="1.0" xmlns="http://www.w3.org/2000/svg" :style="svgStyleObj" id="la" class="leftRightArrow"
-        viewBox="0 0 460.000000 810.000000"  :height="(properties.Height/2 > 60 && properties.Height < 850) ? properties.Height/2 - 45 : properties.Height >= 850 ? 425 : 15" :width="(properties.Width/2 > 60 && properties.Width < 850) ? properties.Width/2 - 45  : properties.Width >= 850 ? 425 : 15"
+        viewBox="0 0 460.000000 810.000000"
         preserveAspectRatio="xMidYMid meet">
           <g :fill="properties.Enabled?properties.ForeColor:'rgb(200,200,200)'"
           transform="translate(0.000000,810.000000) scale(0.100000,-0.100000)"
@@ -74,9 +75,10 @@
           :style="styleButton"
           :runmode="getDisableValue"
           @blur="isClicked = false"
+          @mouseover="updateMouseCursor"
         >
-          <div v-if="checkOtherOrientations()">
-            <svg version="1.0" xmlns="http://www.w3.org/2000/svg" :style="svgStyleObj" :height="(properties.Height/2 > 60 && properties.Height < 850) ? properties.Height/2 - 45 : properties.Height >= 850 ? 425 : 15" :width="(properties.Width/2 > 60 && properties.Width < 850) ? properties.Width/2 - 45  : properties.Width >= 850 ? 425 : 15"
+          <div v-if="checkOtherOrientations()" :style="svgOuterDivObj">
+            <svg version="1.0" xmlns="http://www.w3.org/2000/svg" :style="svgStyleObj"
         viewBox="0 0 810.000000 460.000000"
         preserveAspectRatio="xMidYMid meet">
           <g :fill="properties.Enabled?properties.ForeColor:'rgb(200,200,200)'"
@@ -89,7 +91,7 @@
       </svg>
           </div>
           <div v-else :style="svgDivObj">
-            <svg version="1.0" xmlns="http://www.w3.org/2000/svg" :style="svgStyleObj" id="ra" class="leftRightArrow" :height="(properties.Height/2 > 60 && properties.Height < 850) ? properties.Height/2 - 45 : properties.Height >= 850 ? 425 : 15" :width="(properties.Width/2 > 60 && properties.Width < 850) ? properties.Width/2 - 45  : properties.Width >= 850 ? 425 : 15"
+            <svg version="1.0" xmlns="http://www.w3.org/2000/svg" :style="svgStyleObj" id="ra" class="leftRightArrow"
         viewBox="0 0 460.000000 810.000000"
         preserveAspectRatio="xMidYMid meet">
           <g :fill="properties.Enabled?properties.ForeColor:'rgb(200,200,200)'"
@@ -135,10 +137,15 @@ export default class FDSpinButton extends Mixins(FdControlVue) {
       position: 'relative',
       // top: !this.checkOtherOrientations ? '-' + this.svgHeightCalculate() + 'px' : '',
       width: this.svgWidthCalculate + 'px',
-      height: this.svgHeightCalculate + 'px'
+      height: this.svgHeightCalculate + 'px',
+      minHeight: controlProp.Height! >= 5 ? '3px' : '0px'
     }
   }
-
+  get svgOuterDivObj () {
+    return {
+      height: this.properties.Height! < 22 ? '21px' : ''
+    }
+  }
   get svgDivObj () {
     const controlProp = this.properties
     return {
@@ -169,17 +176,33 @@ export default class FDSpinButton extends Mixins(FdControlVue) {
       if (controlProp.Width! < 20 && controlProp.Width! > 5) {
         return controlProp.Width! - 5
       } else {
-        return 15
+        if ((controlProp.Width! / 2 > 60 && controlProp.Width! < 850)) {
+          return controlProp.Width! / 2 - 45
+        } else {
+          if (controlProp.Width! >= 850) {
+            return 425
+          } else {
+            return 15
+          }
+        }
       }
     } else {
       if (controlProp.Width! < 70 && controlProp.Width! > 15) {
         return controlProp.Width! / 5
-      } else if (controlProp.Width! < 15 && controlProp.Width! >= 10) {
+      } else if (controlProp.Width! <= 15 && controlProp.Width! >= 10) {
         return 1
       } else if (controlProp.Width! < 10) {
         return 0
       } else {
-        return 15
+        if ((controlProp.Width! / 2 > 60 && controlProp.Width! < 850)) {
+          return controlProp.Width! / 2 - 45
+        } else {
+          if (controlProp.Width! >= 850) {
+            return 425
+          } else {
+            return 15
+          }
+        }
       }
     }
   }
@@ -189,18 +212,34 @@ export default class FDSpinButton extends Mixins(FdControlVue) {
     if (this.checkOtherOrientations()) {
       if (controlProp.Height! < 46 && controlProp.Height! > 15) {
         return controlProp.Height! / 5
-      } else if (controlProp.Height! < 15 && controlProp.Height! >= 10) {
+      } else if (controlProp.Height! <= 15 && controlProp.Height! >= 10) {
         return 1
       } else if (controlProp.Height! < 10) {
         return 0
       } else {
-        return 15
+        if ((controlProp.Height! / 2 > 60 && controlProp.Height! < 850)) {
+          return controlProp.Height! / 2 - 45
+        } else {
+          if (controlProp.Height! >= 850) {
+            return 425
+          } else {
+            return 15
+          }
+        }
       }
     } else {
       if (controlProp.Height! < 25) {
         return controlProp.Height! - 10
       } else {
-        return 15
+        if ((controlProp.Height! / 2 > 60 && controlProp.Height! < 850)) {
+          return controlProp.Height! / 2 - 45
+        } else {
+          if (controlProp.Height! >= 850) {
+            return 425
+          } else {
+            return 15
+          }
+        }
       }
     }
   }
@@ -266,10 +305,7 @@ export default class FDSpinButton extends Mixins(FdControlVue) {
       ...this.baseStyle,
       backgroundColor: controlProp.BackColor,
       overflow: 'hidden',
-      cursor:
-        controlProp.MousePointer !== 0 || controlProp.MouseIcon !== ''
-          ? this.getMouseCursorData
-          : 'default',
+      cursor: this.controlCursor,
       display:
         controlProp.Visible && this.isRunMode
           ? 'flex'
@@ -335,11 +371,16 @@ export default class FDSpinButton extends Mixins(FdControlVue) {
   }
 
   mounted () {
-    this.$el.focus()
+    this.$el.focus({
+      preventScroll: true
+    })
     if (this.properties.Orientation === 0) {
       this.orientationValues.orientation = 0
       this.orientationValues.width = 0
       this.orientationValues.height = 0
+      const newValues:IOrientationvalues = this.orientationValues
+      this.checkOrientation(newValues, this.orientationValues)
+    } else {
       const newValues:IOrientationvalues = this.orientationValues
       this.checkOrientation(newValues, this.orientationValues)
     }
@@ -353,7 +394,6 @@ export default class FDSpinButton extends Mixins(FdControlVue) {
   spinButtonClick (event: MouseEvent) {
     if (this.toolBoxSelectControl === 'Select') {
       event.stopPropagation()
-      this.selectedItem(event)
     }
   }
 }

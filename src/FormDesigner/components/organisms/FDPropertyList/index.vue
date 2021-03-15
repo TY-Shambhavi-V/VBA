@@ -22,9 +22,11 @@
         v-model="selected"
         @change="updateSelected($event)"
       >
+      <template v-if="displayName">
         <option
-          :value="userFormId"
+          :value="containerData.properties.ID"
         >{{displayName ? containerData.properties.Name + ' '+ containerData.type : ''}}</option>
+      </template>
         <template v-if="displayName">
          <option  v-for="control in containerDataControl" :value="control" :key="userData[control].properties.Name">
           <b>{{displayName ?  userData[control].properties.Name + ' ' + userData[control].type : ''}}</b>
@@ -36,7 +38,9 @@
     <FDTable v-if="selectedSelect.length > 0" :tableData="propertyTableData"
       :userFormId="userFormId"
       :getSelectedControlsDatas="getSelectedControlsDatas"
-      :resultArray="resultArray" />
+      :resultArray="resultArray"
+      :isPropChanged="isPropChanged"
+    />
   </div>
 </template>
 
@@ -71,6 +75,7 @@ export default class PropertiesList extends FDCommonMethod {
   }
 
   selectedOption: Object= {}
+  ctrlEditMode: boolean = false
 
   selectOption () {
     if (this.displayName) {
@@ -110,6 +115,7 @@ export default class PropertiesList extends FDCommonMethod {
       } else if (this.getSelectedControlsDatas!.length > 1) {
         let ctrlKeys = []
         let selCntrlType = []
+        const userData = this.userformData[this.userFormId]
         const checkValArr = [['CheckBox', 'OptionButton', 'ToggleButton'],
           ['TextBox', 'ListBox', 'ComboBox'],
           ['TabStrip', 'MultiPage', 'SpinButton', 'ScrollBar']]
@@ -121,9 +127,9 @@ export default class PropertiesList extends FDCommonMethod {
 
         // get array of Object which property Object of selected Controls
         for (const controlIndex in this.getSelectedControlsDatas!) {
-          const controlData = this.userformData[this.userFormId][this.getSelectedControlsDatas![controlIndex]]
+          const controlData = userData[this.getSelectedControlsDatas![controlIndex]]
           const defineList = this.propList.data[controlData.type]
-          selCntrlType.push(this.userformData[this.userFormId][this.getSelectedControlsDatas![controlIndex]].type)
+          selCntrlType.push(userData[this.getSelectedControlsDatas![controlIndex]].type)
           ctrlKeys.push(Object.keys(defineList))
         }
         const uniqueSelType = selCntrlType.filter((v, i, a) => a.indexOf(v) === i)
@@ -145,13 +151,13 @@ export default class PropertiesList extends FDCommonMethod {
         for (const propName in commonProp) {
           if (commonProp[propName] === 'Font') {
             const fontObj = {
-              FontName: '',
-              FontSize: '',
-              FontBold: '',
-              FontItalic: '',
-              FontUnderline: '',
-              FontStrikethrough: '',
-              FontStyle: ''
+              FontName: [],
+              FontSize: [],
+              FontBold: [],
+              FontItalic: [],
+              FontUnderline: [],
+              FontStrikethrough: [],
+              FontStyle: []
             }
             Vue.set(combinedObj, commonProp[propName], fontObj)
           } else {
@@ -166,7 +172,7 @@ export default class PropertiesList extends FDCommonMethod {
             if (commonProp.indexOf(propName) > -1) {
               if (propName === 'Font') {
                 for (const fontProp in contolProp[propName]) {
-                  combinedObj[propName][fontProp] = [...combinedObj[propName][fontProp], contolProp[propName][fontProp]]
+                  combinedObj[propName][fontProp].push(contolProp![propName]![fontProp]!)
                 }
               } else {
                 combinedObj[propName] = [...combinedObj[propName], contolProp[propName as keyof controlProperties]]
@@ -177,22 +183,24 @@ export default class PropertiesList extends FDCommonMethod {
         const allEqual = (arr: string[]): boolean => { return arr.every((v: string) => v === arr[0]) }
 
         // get the common value
+        const initialFont = { ...userData[this.getSelectedControlsDatas![0]].properties.Font! }
         for (const propName in combinedObj) {
           if (propName === 'Font') {
             const fontObj = {
               FontName: '',
-              FontSize: '',
+              FontSize: -1,
               FontBold: '',
               FontItalic: '',
               FontUnderline: '',
               FontStrikethrough: '',
               FontStyle: ''
             }
+
             for (const fontProp in combinedObj[propName]) {
               const isSame: boolean = allEqual(combinedObj[propName][fontProp])
-              fontObj[fontProp] = isSame ? combinedObj[propName][fontProp][0] : ''
+              initialFont[fontProp] = isSame ? combinedObj[propName][fontProp][0] : fontObj[fontProp]
             }
-            commonPropValue[propName] = fontObj
+            commonPropValue[propName] = { ...initialFont }
           } else {
             const isSame: boolean = allEqual(combinedObj[propName])
             commonPropValue[propName] = isSame ? combinedObj[propName][0] : ''
@@ -246,12 +254,36 @@ export default class PropertiesList extends FDCommonMethod {
     return this.selectedControls[this.userFormId].container
   }
   get containerData () {
-    const type = this.userData[this.selectedContainer[0]].type
-    return type === 'Page' ? this.userData[this.selectedContainer[1]] : this.userData[this.selectedContainer[0]]
+    if (this.userData[this.selectedSelect[0]].type !== 'Userform' && this.ctrlEditMode) {
+      if (this.userData[this.selectedSelect[0]].type === 'Frame') {
+        return this.userData[this.selectedControls[this.userFormId].selected[0]]
+      } else {
+        const type = this.userData[this.selectedContainer[0]].type
+        return type === 'Page' ? this.userData[this.selectedContainer[1]] : this.userData[this.selectedContainer[0]]
+      }
+    } else {
+      const type = this.userData[this.selectedContainer[0]].type
+      return type === 'Page' ? this.userData[this.selectedContainer[1]] : this.userData[this.selectedContainer[0]]
+    }
   }
   get containerDataControl () {
-    const type = this.userData[this.selectedContainer[0]].type
-    return type === 'Page' ? this.getChildControl(this.selectedContainer[1]) : this.userData[this.selectedContainer[0]].controls
+    if (this.ctrlEditMode) {
+      if (this.userData[this.selectedSelect[0]].type === 'Frame') {
+        return this.userData[this.selectedControls[this.userFormId].selected[0]].controls.length > 0 ? this.userData[this.selectedControls[this.userFormId].selected[0]].controls : ''
+      } else {
+        const type = this.userData[this.selectedSelect[0]].type
+        const ctrls = this.userData[this.selectedContainer[0]].controls
+        const pageControls = this.userData[this.selectedSelect[0]].controls
+        const combinedControl = ctrls.concat(pageControls)
+        return type === 'Page' ? combinedControl : this.userData[this.selectedContainer[0]].controls
+      }
+    } else {
+      const type = this.userData[this.selectedContainer[0]].type
+      const ctrls = type === 'Page' ? this.userData[this.selectedContainer[1]].controls : []
+      const pageControls = this.userData[this.selectedContainer[0]].controls
+      const combinedControl = ctrls.concat(pageControls)
+      return type === 'Page' ? combinedControl : this.userData[this.selectedContainer[0]].controls
+    }
   }
   get userData () {
     return this.userformData[this.userFormId]
@@ -263,9 +295,31 @@ export default class PropertiesList extends FDCommonMethod {
   updateOption () {
     this.selectOption()
   }
+  getEditMode () {
+    const userData = this.userformData[this.userFormId]
+    const selected = this.selectedControls[this.userFormId].selected
+    if (
+      selected.length === 1 &&
+      !selected[0].startsWith('group') &&
+      userData[selected[0]].type !== 'Userform'
+    ) {
+      if (userData[selected[0]].type === 'Page' || userData[selected[0]].type === 'Frame' || userData[selected[0]].type === 'MultiPage') {
+        EventBus.$emit('getEdiTMode', (editmode: boolean) => {
+          this.ctrlEditMode = editmode
+        })
+      } else {
+        this.ctrlEditMode = false
+      }
+    } else {
+      this.ctrlEditMode = false
+    }
+  }
   created () {
     EventBus.$on('dispProp', (val: boolean) => {
       this.isTableVisible = val
+    })
+    EventBus.$on('getCtrlEditMode', () => {
+      this.getEditMode()
     })
   }
   destroyed () {

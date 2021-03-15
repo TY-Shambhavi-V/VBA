@@ -60,7 +60,7 @@
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator'
 import { EventBus } from '@/FormDesigner/event-bus'
 import { State, Action } from 'vuex-class'
-import { IupdateControlExtraData } from '@/storeModules/fd/actions'
+import { IupdateControlExtraData, IupdateControl } from '@/storeModules/fd/actions'
 import FdDialogDragVue from '@/api/abstract/FormDesigner/FdDialogDragVue'
 
 @Component({
@@ -68,6 +68,7 @@ import FdDialogDragVue from '@/api/abstract/FormDesigner/FdDialogDragVue'
 })
 export default class TabStripTabOrderModal extends FdDialogDragVue {
   @State((state) => state.fd.userformData) userformData!: userformData;
+  @Action('fd/updateControl') updateControl!: (payload: IupdateControl) => void;
   @Action('fd/updateControlExtraData') updateControlExtraData!: (
     payload: IupdateControlExtraData
   ) => void;
@@ -77,6 +78,12 @@ export default class TabStripTabOrderModal extends FdDialogDragVue {
   controlId: string = '';
   currentIndex: number = -1;
   tabOrderList: tabsItems[] = [];
+  selectedTabData: tabsItems = {
+    Name: '',
+    Caption: '',
+    ToolTip: '',
+    Accelerator: ''
+  }
 
   updateControlData () {
     this.updateControlExtraData({
@@ -85,9 +92,26 @@ export default class TabStripTabOrderModal extends FdDialogDragVue {
       propertyName: 'Tabs',
       value: this.tabOrderList
     })
+    if (this.selectedTabData.Name) {
+      const index = this.tabOrderList.findIndex(data => {
+        return data.Name === this.selectedTabData.Name
+      })
+      this.updateControl({
+        userFormId: this.userFormId,
+        controlId: this.controlId,
+        propertyName: 'Value',
+        value: index
+      })
+    }
     this.closeDialog()
   }
   closeDialog () {
+    this.selectedTabData = {
+      Name: '',
+      Caption: '',
+      ToolTip: '',
+      Accelerator: ''
+    }
     this.isTabOrderOpen = false
     this.getFocusElement(false)
   }
@@ -99,10 +123,12 @@ export default class TabStripTabOrderModal extends FdDialogDragVue {
   created () {
     EventBus.$on(
       'tabStripTabOrder',
-      (userFormId: string, controlId: string) => {
+      (userFormId: string, controlId: string, type: string, selectedTabIndex: number) => {
         this.getFocusElement(true)
+
         const tabOrderControlData = this.userformData[userFormId][controlId]
           .extraDatas!.Tabs!
+
         if (tabOrderControlData.length > 0) {
           this.tabOrderList = JSON.parse(JSON.stringify(tabOrderControlData))
           this.currentIndex = 0
@@ -112,6 +138,9 @@ export default class TabStripTabOrderModal extends FdDialogDragVue {
         this.isTabOrderOpen = true
         this.userFormId = userFormId
         this.controlId = controlId
+        if (selectedTabIndex >= 0) {
+          this.selectedTabData = { ...tabOrderControlData[selectedTabIndex] }
+        }
       }
     )
   }

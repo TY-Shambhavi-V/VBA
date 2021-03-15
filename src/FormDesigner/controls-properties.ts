@@ -55,7 +55,7 @@ export const controlProperties = {
       11: 'progress',
       12: 'help',
       13: 'all-scroll',
-      14: `url(${controlData.properties.MouseIcon}), auto`
+      14: `url(${controlData.properties.MouseIcon}) 50 50, auto`
     }
     const controlMousePointerData :number = controlData.properties.MousePointer!
     if (propObject[controlMousePointerData] !== undefined) {

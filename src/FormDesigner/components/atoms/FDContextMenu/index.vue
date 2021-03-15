@@ -182,13 +182,16 @@ export default class ContextMenu extends FDCommonMethod {
         )
       } else if (controlActionName === 'ID_MOVE') {
         const type = this.userformData[this.userFormId][this.controlId].type
+        const selectedPageID = this.selectedControls[this.userFormId].selected[0]
         if (type === 'MultiPage') {
-          EventBus.$emit('userFormTabOrder', this.userFormId, this.controlId, type)
+          const value = this.userformData[this.userFormId][this.controlId].properties.Value
+          EventBus.$emit('userFormTabOrder', this.userFormId, this.controlId, type, value, selectedPageID)
         } else {
-          EventBus.$emit('tabStripTabOrder', this.userFormId, this.controlId, type)
+          const value = this.userformData[this.userFormId][this.controlId].properties.Value
+          EventBus.$emit('tabStripTabOrder', this.userFormId, this.controlId, type, value)
         }
       } else if (controlActionName === 'ID_TABORDER') {
-        EventBus.$emit('userFormTabOrder', this.userFormId, this.containerId, '')
+        EventBus.$emit('userFormTabOrder', this.userFormId, this.containerId, '', -1, '')
       } else if (
         controlActionName === 'ID_ALIGN' ||
       controlActionName === 'ID_MAKESAMESIZE'
@@ -225,7 +228,7 @@ export default class ContextMenu extends FDCommonMethod {
     const controlType = this.userformData[this.userFormId][this.controlId].type
     const position = this.getCursorPos(event)
     const length = position.endPosition - position.startPosition
-    let baseValue = this.editTextRef.innerHTML.split('')
+    let baseValue = this.editTextRef.innerText.split('')
     baseValue.splice(position.startPosition, length)
     const updateValue = baseValue.slice(0, position.startPosition).join('') + this.copiedText + baseValue.slice(position.startPosition).join('')
     EventBus.$emit('updateText', updateValue)
@@ -297,6 +300,7 @@ export default class ContextMenu extends FDCommonMethod {
       const tabControlData = JSON.parse(
         JSON.stringify(this.userformData[this.userFormId][this.controlId])
       ).extraDatas.Tabs
+      const tabLength = this.userformData[this.userFormId][this.controlId].extraDatas!.tabDataLength!
       let prevTabId = -1
       const initialTabData: tabsItems = {
         Name: '',
@@ -304,21 +308,8 @@ export default class ContextMenu extends FDCommonMethod {
         ToolTip: '',
         Accelerator: ''
       }
-      if (tabControlData.length > 0) {
-        for (let i = 0; i < tabControlData.length; i++) {
-          const id = tabControlData[i].Name.split('Tab').pop() || '-1'
-          const parseId = parseInt(id, 10)
-          if (!isNaN(parseId) && prevTabId < parseId) {
-            prevTabId = parseId
-          }
-        }
-        prevTabId += 1
-        initialTabData.Name = `Tab${prevTabId}`
-        initialTabData.Caption = `Tab${prevTabId}`
-      } else {
-        initialTabData.Name = `Tab${1}`
-        initialTabData.Caption = `Tab${1}`
-      }
+      initialTabData.Name = `Tab${tabLength + 1}`
+      initialTabData.Caption = `Tab${tabLength + 1}`
       tabControlData.push(initialTabData)
       this.updateControlExtraData({
         userFormId: this.userFormId,
@@ -330,7 +321,13 @@ export default class ContextMenu extends FDCommonMethod {
         userFormId: this.userFormId,
         controlId: this.controlId,
         propertyName: 'Value',
-        value: prevTabId - 1
+        value: tabControlData.length - 1
+      })
+      this.updateControlExtraData({
+        userFormId: this.userFormId,
+        controlId: this.controlId,
+        propertyName: 'tabDataLength',
+        value: tabLength! + 1
       })
     } else if (type === 'MultiPage') {
       const parentId = this.controlId.split('MultiPage').pop()
@@ -502,10 +499,10 @@ export default class ContextMenu extends FDCommonMethod {
     for (const selControl of getSelControl) {
       const type = userData[selControl].type
       const tempZIndex = userData[selControl].extraDatas!.zIndex!
-      const controlIndex = Object.keys(userData).findIndex((val: string, index: number) => {
+      const controlIndex = containerControls.findIndex((val: string, index: number) => {
         return 'zIndex' in userData[val].extraDatas! && (userData[val].extraDatas!.zIndex === tempZIndex - 1)
       })
-      const nextSelectedControl = controlIndex !== -1 ? Object.keys(userData)[controlIndex] : ''
+      const nextSelectedControl = controlIndex !== -1 ? containerControls[controlIndex] : ''
       if (nextSelectedControl !== '' && !highProrControl.includes(selControl)) {
         if (getSelControl!.includes(nextSelectedControl)) {
           if (!nextSelctedSeries.includes(selControl)) {
@@ -735,7 +732,7 @@ export default class ContextMenu extends FDCommonMethod {
 
   @Emit('createGroup')
   createGroup (groupId: string) {
-    return groupId
+    return { groupId: groupId, containerId: this.getContainerList(groupId)[0] }
   }
 
   updateControlGroupID (groupName: string, updateGroupId: string) {
@@ -937,7 +934,7 @@ export default class ContextMenu extends FDCommonMethod {
       addId: ctrlId,
       item: ctrlObj
     })
-    if (isParent) {
+    if (isParent && this.copyControlList.type === 'copy') {
       const newTabIndex = this.userformData[this.userFormId][parentId].controls.length
       this.updateTabIndexValue(ctrlId)
       this.updateZIndexValue(ctrlId)
@@ -1029,6 +1026,22 @@ export default class ContextMenu extends FDCommonMethod {
       }
     }
   }
+  generateUniqueName (controlName: string) {
+    let lastControlId = 0
+    const userformControlIds = Object.keys(this.userformData[this.userFormId])
+    for (let i = 0; i < userformControlIds.length; i++) {
+      const ctrlProp = this.userformData[this.userFormId][userformControlIds[i]].properties
+      if (ctrlProp.Name!.indexOf(controlName) !== -1) {
+        const IdNum =
+        ctrlProp.Name!.split(controlName).pop() || '-1'
+        const pasreId = parseInt(IdNum, 10)
+        if (!isNaN(pasreId) && lastControlId < pasreId) {
+          lastControlId = pasreId
+        }
+      }
+    }
+    return `${controlName}${lastControlId + 1}`
+  }
   /**
    * @description To paste controls in respective container present in respective userform
    * @function pasteControl
@@ -1061,7 +1074,6 @@ export default class ContextMenu extends FDCommonMethod {
           groupArray: groupArray!
         })
       }
-
       const recCopyControl = (daTarget: string) => {
         const daTargetControls = userFormData[daTarget].controls
         if (daTargetControls && daTargetControls.length > 0) {
@@ -1078,7 +1090,7 @@ export default class ContextMenu extends FDCommonMethod {
                 ...controlObj.properties,
                 ID: controlID!,
                 GroupID: groupIdIndex !== -1 ? newGroupId[groupIdIndex] : '',
-                Name: Name
+                Name: controlObj.type === 'Page' ? controlObj.properties.Name : this.generateUniqueName(controlObj.type)
               }
             }
             this.removeChildControl(daTarget, key)
@@ -1108,7 +1120,7 @@ export default class ContextMenu extends FDCommonMethod {
               ...controlObj.properties,
               ID: controlID!,
               GroupID: groupIdIndex !== -1 ? newGroupId[groupIdIndex] : '',
-              Name: Name
+              Name: controlObj.type === 'Page' ? controlObj.properties.Name : this.generateUniqueName(controlObj.type)
             }
           }
           this.updateNewControl(this.containerId, controlID, item, true)
@@ -1133,7 +1145,7 @@ export default class ContextMenu extends FDCommonMethod {
                     ...controlObj.properties,
                     ID: controlID!,
                     GroupID: groupIdIndex !== -1 ? newGroupId[groupIdIndex] : '',
-                    Name: Name
+                    Name: controlObj.type === 'Page' ? controlObj.properties.Name : this.generateUniqueName(controlObj.type)
                   }
                 }
                 this.updateNewControl(this.containerId, controlID, item, true)
@@ -1247,7 +1259,9 @@ export default class ContextMenu extends FDCommonMethod {
     const selected = this.selectedControls[this.userFormId].selected
     const selContainer = this.selectedControls[this.userFormId].container
     const filterControls = []
-    const controls = this.userformData[this.userFormId][this.selectedControls[this.userFormId].container[0]].controls
+    const controls = userData[this.selectedControls[this.userFormId].container[0]].type === 'MultiPage'
+      ? userData[this.getContainerList(this.selectedControls[this.userFormId].container[0])[0]].controls
+      : userData[this.selectedControls[this.userFormId].container[0]].controls
     for (const control of selected) {
       if (!control.startsWith('ID_USERFORM')) {
         if (control.startsWith('group')) {
@@ -1263,15 +1277,20 @@ export default class ContextMenu extends FDCommonMethod {
         }
       }
     }
-    if (selected.length === 1 && !selected[0].startsWith('group') && this.userformData[this.userFormId][selected[0]].properties.GroupID !== '') {
+    const selControlGroupId = !selected[0].startsWith('group')
+      ? userData[selected[0]].type === 'Page'
+        ? userData[this.getContainerList(selected[0])[0]].properties.GroupID!
+        : userData[selected[0]].properties.GroupID!
+      : ''
+    if (selected.length === 1 && !selected[0].startsWith('group') && selControlGroupId !== '') {
       for (let j = 0; j < controls.length; j++) {
-        if (userData[controls[j]].properties.GroupID === userData[selected[0]].properties.GroupID) {
+        if (userData[controls[j]].properties.GroupID === selControlGroupId) {
           filterControls.push(controls[j])
         }
       }
       if (filterControls.length === 2) {
-        const curSelect = filterControls[0] === selected[0] ? filterControls[1] : filterControls[0]
-        const selGroupId = userData[selected[0]].properties.GroupID
+        const container = userData[selected[0]].type === 'Page' ? this.getContainerList(selected[0])[0] : selected[0]
+        const curSelect = filterControls[0] === container ? filterControls[1] : filterControls[0]
         this.updateControlProperty('GroupID', '', curSelect)
       }
     }

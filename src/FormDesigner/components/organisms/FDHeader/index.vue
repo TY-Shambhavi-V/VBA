@@ -113,7 +113,7 @@
               </ul>
             </div>
           </li>
-          <li @click="subMenuDisplay">
+          <li @click="subMenuDisplay" @mouseover="getEditMode" @mouseleave="updateCtrlEditMode">
             <u>F</u>ormat
             <div class="sub-menu-1" v-if="displaySubMenu === true">
               <ul class="sub-menu-ul">
@@ -354,6 +354,7 @@ import ObjectLogo from '../../../../assets/view-object.svg'
 import FDSVGImage from '@/FormDesigner/components/atoms/FDSVGImage/index.vue'
 import { EventBus } from '@/FormDesigner/event-bus'
 import FDCommonMethod from '@/api/abstract/FormDesigner/FDCommonMethod'
+import { controlProperties } from '@/FormDesigner/controls-properties'
 
 @Component({
   name: 'Header',
@@ -391,6 +392,7 @@ export default class Header extends FDCommonMethod {
   ) => void;
   propControlData = {};
   userFormId = 'ID_USERFORM1';
+  controlEditMode: boolean = false
   gridSize: number = 9
   insertUserForm () {
     this.propControlData = this.userformData
@@ -416,6 +418,17 @@ export default class Header extends FDCommonMethod {
         type: 'Userform'
       }
     })
+  }
+  getEditMode () {
+    const selected = this.selectedControls[this.userFormId].selected
+    if (selected.length === 1 && !selected[0].startsWith('group')) {
+      EventBus.$emit('getEdiTMode', (editmode: boolean) => {
+        this.controlEditMode = editmode
+      })
+    }
+  }
+  updateCtrlEditMode () {
+    this.controlEditMode = false
   }
   subMenuDisplay () {
     this.displaySubMenu = !this.displaySubMenu
@@ -925,9 +938,24 @@ export default class Header extends FDCommonMethod {
     for (let index = 0; index < ctrlSel.length; index++) {
       if (!ctrlSel[index].startsWith('group')) {
         const controlprop = usrFrmData[ctrlSel[index]].properties
-        if ('AutoSize' in controlprop) {
+        if (usrFrmData[ctrlSel[index]].type === 'SpinButton') {
+          if (controlProperties.controlsOrientationProp(usrFrmData[ctrlSel[index]]) === true) {
+            this.updateControlProperty('Height', 43.5, ctrlSel[index])
+            this.updateControlProperty('Width', 21.6, ctrlSel[index])
+          } else {
+            this.updateControlProperty('Width', 52.5, ctrlSel[index])
+            this.updateControlProperty('Height', 21.6, ctrlSel[index])
+          }
+        } else if (usrFrmData[ctrlSel[index]].type === 'ScrollBar') {
+          if (controlProperties.controlsOrientationProp(usrFrmData[ctrlSel[index]]) === true) {
+            this.updateControlProperty('Width', 21.6, ctrlSel[index])
+          } else {
+            this.updateControlProperty('Height', 21.6, ctrlSel[index])
+          }
+        } else if ('AutoSize' in controlprop) {
           sizeToFitArr.push(ctrlSel[index])
           sizeToFitVal.push(controlprop.AutoSize!)
+          this.updateControlProperty('AutoSize', false, ctrlSel[index])
           this.updateControlProperty('AutoSize', true, ctrlSel[index])
         }
       }
@@ -1659,53 +1687,55 @@ export default class Header extends FDCommonMethod {
     const selected = this.selectedControls[this.userFormId].selected
     const selContainer = this.selectedControls[this.userFormId].container
     const userData = this.userformData[this.userFormId]
-    if (id === 'unGroup') {
-      let groupId: boolean = false
-      const selectedGroupArray = selected.filter(
-        (val: string) => val.startsWith('group') && val
-      )
-      if (selectedGroupArray.length === 1 && selected.length === 1) {
-        disabled = false
-      }
-    }
-    if (id === 'group') {
-      disabled = selected.length <= 1
-    }
-    if (id === 'sizeToGrid' || id === 'centreInForm') {
-      disabled = !(selected.length >= 1 && selected[0] !== selContainer[0])
-    }
-    if (id === 'sizeToFit') {
-      const selSelected = []
-      for (const control of this.selectedControls[this.userFormId].selected) {
-        if (!control.startsWith('group')) {
-          const type = this.userformData[this.userFormId][control].type
-          if (type !== 'MultiPage' && type !== 'Frame' && type !== 'ListBox' && type !== 'Page' && type !== 'TabStrip' && type !== 'Userform') {
-            selSelected.push(control)
-          }
+    if (!this.controlEditMode) {
+      if (id === 'unGroup') {
+        let groupId: boolean = false
+        const selectedGroupArray = selected.filter(
+          (val: string) => val.startsWith('group') && val
+        )
+        if (selectedGroupArray.length === 1 && selected.length === 1) {
+          disabled = false
         }
       }
-      disabled = !(selSelected.length >= 1)
-    }
-    if (id === 'order') {
-      disabled = !(selected.length >= 1 && userData[selContainer[0]].controls.length >= 2)
-    }
-    if (id === 'makeEqual') {
-      disabled = !(selected.length >= 3)
-    }
-    if (id === 'incDecspacing' || id === 'removeSpace') {
-      disabled = !(selected.length >= 2)
-    }
-    if (id === 'arrangeButton') {
-      const buttonArray = []
-      for (let index = 0; index < selected.length; index++) {
-        if (!selected[index].startsWith('group')) {
-          const controlprop = userData[selected[index]]
-          if (controlprop.type === 'CommandButton') {
-            buttonArray.push(selected[index])
+      if (id === 'group') {
+        disabled = selected.length <= 1
+      }
+      if (id === 'sizeToGrid' || id === 'centreInForm') {
+        disabled = !(selected.length >= 1 && selected[0] !== selContainer[0])
+      }
+      if (id === 'sizeToFit') {
+        const selSelected = []
+        for (const control of this.selectedControls[this.userFormId].selected) {
+          if (!control.startsWith('group')) {
+            const type = this.userformData[this.userFormId][control].type
+            if (type !== 'MultiPage' && type !== 'Frame' && type !== 'ListBox' && type !== 'Page' && type !== 'TabStrip' && type !== 'Userform') {
+              selSelected.push(control)
+            }
           }
         }
+        disabled = !(selSelected.length >= 1)
       }
-      disabled = !(buttonArray.length >= 1)
+      if (id === 'order') {
+        disabled = !(selected.length >= 1 && userData[selContainer[0]].controls.length >= 2)
+      }
+      if (id === 'makeEqual') {
+        disabled = !(selected.length >= 3)
+      }
+      if (id === 'incDecspacing' || id === 'removeSpace') {
+        disabled = !(selected.length >= 2)
+      }
+      if (id === 'arrangeButton') {
+        const buttonArray = []
+        for (let index = 0; index < selected.length; index++) {
+          if (!selected[index].startsWith('group')) {
+            const controlprop = userData[selected[index]]
+            if (controlprop.type === 'CommandButton') {
+              buttonArray.push(selected[index])
+            }
+          }
+        }
+        disabled = !(buttonArray.length >= 1)
+      }
     }
     return disabled
   }

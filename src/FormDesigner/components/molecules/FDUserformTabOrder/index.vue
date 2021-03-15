@@ -81,6 +81,7 @@ export default class FDUserformTabOrder extends FdDialogDragVue {
   tabOrderList: localTabOrderItem[] = [];
   controlType: string = ''
   containerId: string = ''
+  selectedPageID: string = ''
   get buttonDisabled () {
     return !(this.tabOrderList.length > 1)
   }
@@ -105,10 +106,20 @@ export default class FDUserformTabOrder extends FdDialogDragVue {
         containerId: this.containerId,
         targetControls: controlsArray
       })
+      if (this.selectedPageID) {
+        const index = controlsArray.indexOf(this.selectedPageID)
+        this.updateControl({
+          userFormId: this.userFormId,
+          controlId: this.containerId,
+          propertyName: 'Value',
+          value: index
+        })
+      }
     }
     this.closeDialog()
   }
   closeDialog () {
+    this.selectedPageID = ''
     this.isTabOrderOpen = false
     this.getFocusElement(false)
   }
@@ -119,7 +130,7 @@ export default class FDUserformTabOrder extends FdDialogDragVue {
   created () {
     EventBus.$on(
       'userFormTabOrder',
-      (userFormId: string, controlId: string, type: string) => {
+      (userFormId: string, controlId: string, type: string, selectedPageValue: number, selectedPageID: string) => {
         this.getFocusElement(true)
         this.controlType = type
         const tabOrderControlData = JSON.parse(JSON.stringify(this.userformData[userFormId][controlId]))
@@ -154,6 +165,9 @@ export default class FDUserformTabOrder extends FdDialogDragVue {
         this.isTabOrderOpen = true
         this.userFormId = userFormId
         this.containerId = controlId
+        if (selectedPageValue >= 0) {
+          this.selectedPageID = selectedPageID
+        }
       }
     )
   }
