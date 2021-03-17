@@ -45,7 +45,6 @@
           @keydown.esc="releaseEditMode"
           @blur.stop="clearMatchEntry"
           @keydown.stop="handleExtendArrowKeySelect"
-          @keyup="handleKeyup"
           @mousedown="
             isRunMode || isEditMode ? handleMousedown($event) : ''
           "
@@ -782,7 +781,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
                         const node = ele.childNodes[k] as HTMLDivElement
                         const tempNode = node.childNodes[0]
                           .childNodes[0] as HTMLInputElement
-                        node.style.backgroundColor = 'rgb(0, 120, 215)'
+                        node.style.backgroundColor = 'rgb(59, 122, 231)'
                         if (this.properties.ListStyle === 1 && !tempNode.checked) {
                           // tempNode.checked = !tempNode.checked
                           tempNode.checked = true
@@ -848,7 +847,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
                         const node = ele.childNodes[k] as HTMLDivElement
                         const tempNode = node.childNodes[0]
                           .childNodes[0] as HTMLInputElement
-                        node.style.backgroundColor = 'rgb(0, 120, 215)'
+                        node.style.backgroundColor = 'rgb(59, 122, 231)'
                         if (this.properties.ListStyle === 1 && !tempNode.checked) {
                           // tempNode.checked = !tempNode.checked
                           tempNode.checked = true
@@ -927,10 +926,10 @@ export default class FDListBox extends Mixins(FdControlVue) {
   getSelectedStyle () {
     if (this.listStyleRef) {
       for (let i = 0; i < this.listStyleRef.length; i++) {
-        if (this.listStyleRef[i].style.backgroundColor === 'rgb(0, 120, 215)') {
+        if (this.listStyleRef[i].style.backgroundColor === 'rgb(59, 122, 231)') {
           for (let j = 0; j < this.listStyleRef[i].children.length; j++) {
             const a = this.listStyleRef[i].children[j] as HTMLDivElement
-            a.style.backgroundColor = 'rgb(0, 120, 215)'
+            a.style.backgroundColor = 'rgb(59, 122, 231)'
           }
         } else if (this.listStyleRef[i].style.backgroundColor === '') {
           for (let j = 0; j < this.listStyleRef[i].children.length; j++) {
@@ -1125,7 +1124,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
           if (this.properties.BoundColumn! === 0) {
             for (let i = 0; i < this.extraDatas.RowSourceData!.length; i++) {
               const x = this.listStyleRef[i] as HTMLInputElement
-              if (this.listStyleRef[i].style.backgroundColor === 'rgb(0, 120, 215)') {
+              if (this.listStyleRef[i].style.backgroundColor === 'rgb(59, 122, 231)') {
                 this.updateDataModel({ propertyName: 'Value', value: i })
                 if (this.properties.TextColumn === -1) {
                   this.updateDataModel({ propertyName: 'Text', value: this.extraDatas.RowSourceData![i][0] })
@@ -1145,7 +1144,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
               }
               const x = this.listStyleRef[i] as HTMLInputElement
               if (x.checked) {
-                this.listStyleRef[i].style.backgroundColor = 'rgb(0, 120, 215)'
+                this.listStyleRef[i].style.backgroundColor = 'rgb(59, 122, 231)'
               }
               if (!x.checked) {
                 this.listStyleRef[i].style.backgroundColor = ''
@@ -1288,7 +1287,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
           this.extraDatas.RowSourceData![i][this.properties.BoundColumn! - 1] === this.extraDatas.ControlSourceValue!
         ) {
           const listRow = this.listStyleRef[i]
-          listRow.style.backgroundColor = 'rgb(0, 120, 215)'
+          listRow.style.backgroundColor = 'rgb(59, 122, 231)'
         }
       }
     }

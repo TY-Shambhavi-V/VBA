@@ -30,6 +30,13 @@ export default class FdControlVue extends Vue {
   keyCount: number = 0;
   prevNode: HTMLDivElement;
   matchFlag: boolean = false;
+  arrowMove: number = 0;
+  afterArrow: number = 0;
+  arrowUp: boolean = false;
+  first: number = 0;
+  prevEle: HTMLDivElement;
+  lastDrag: HTMLDivElement;
+  isDrag: boolean = false;
   start: number = 0;
   last: number = 0;
   timeup: boolean = false;
@@ -1066,7 +1073,6 @@ handleKeyup (e: KeyboardEvent) {
  *
  */
 handleExtendArrowKeySelect (e: KeyboardEvent) {
-  debugger
   window.clearTimeout(this.timer)
   const x = e.key.toUpperCase().charCodeAt(0)
   const tempPath = e.composedPath()
@@ -1244,7 +1250,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     }
   }
   if (e.key === 'ArrowUp') {
-    if (this.properties.MultiSelect === 0 || this.properties.MultiSelect === 1) {
+    if (this.properties.MultiSelect === 0 || this.properties.MultiSelect === 1 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
       for (let point = 0; point < tempPath.length; point++) {
         const element = tempPath[point] as HTMLDivElement
         if (element.className === 'table-body') {
@@ -1260,12 +1266,15 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
               this.prevNode = ei
             }
           }
+          this.prevNode.focus()
+          this.arrowMove = 1
+          this.arrowUp = false
           break
         }
       }
     }
   } else if (e.key === 'ArrowDown') {
-    if (this.properties.MultiSelect === 0 || this.properties.MultiSelect === 1) {
+    if (this.properties.MultiSelect === 0 || this.properties.MultiSelect === 1 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
       for (let point = 0; point < tempPath.length; point++) {
         const element = tempPath[point] as HTMLDivElement
         if (element.className === 'table-body') {
@@ -1279,8 +1288,12 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
               const ele = element.childNodes[++index] as HTMLDivElement
               this.setBGandCheckedForMatch(ele)
               this.prevNode = ele
+              break
             }
           }
+          this.prevNode.focus()
+          this.first = 0
+          this.arrowMove = 1
           break
         }
       }
@@ -1291,14 +1304,14 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     e.shiftKey === true &&
    (nextSiblingEvent !== null || prevSiblingEvent.nextSibling !== null)
   ) {
+    debugger
     let currentElement: HTMLDivElement
     if (nextSiblingEvent === null) {
       currentElement = prevSiblingEvent.nextSibling! as HTMLDivElement
     } else {
       currentElement = nextSiblingEvent
     }
-    console.log(eventTarget.innerText)
-    if (this.properties.MultiSelect === 2) {
+    if (this.properties.MultiSelect === 2 && eventTarget.nextSibling !== null) {
       if (eventTarget.style.backgroundColor !== 'rgb(0, 120, 215)') {
         this.setOptionBGColorAndChecked(e)
       } else if (
@@ -1306,6 +1319,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
         currentElement!.style.backgroundColor !== ''
       ) {
         this.setOptionBGColorAndChecked(e)
+        this.unselectBGColorAndchecked(e)
       } else if (eventTarget.nextSibling!.nextSibling !== null) {
         this.setBGColorForNextSibling(e)
       } else if (
@@ -1314,25 +1328,33 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
       ) {
         this.setBGColorForNextSibling(e)
       }
-        currentElement!.focus()
+      this.arrowMove = 0
+      this.afterArrow = 1
+      this.first = 0
+      currentElement!.focus()
     }
   } else if (
     e.key === 'ArrowUp' &&
     e.shiftKey === true &&
    (prevSiblingEvent !== null || nextSiblingEvent.previousSibling !== null)
   ) {
+    debugger
+    this.first++
     let currentElement: HTMLDivElement
     if (prevSiblingEvent === null) {
       currentElement = nextSiblingEvent.previousSibling! as HTMLDivElement
     } else {
       currentElement = prevSiblingEvent
     }
-    if (this.properties.MultiSelect === 2) {
+    if (this.properties.MultiSelect === 2 && currentElement !== null && eventTarget.previousSibling !== null) {
       if (
         eventTarget.style.backgroundColor === 'rgb(0, 120, 215)' &&
         currentElement.style.backgroundColor !== ''
       ) {
         this.setOptionBGColorAndChecked(e)
+        this.unselectBGColorAndchecked(e)
+      } else if (eventTarget.previousSibling!.previousSibling !== null) {
+        this.setBGColorForPreviousSibling(e)
       } else if (eventTarget.previousSibling!.previousSibling !== null) {
         this.setBGColorForPreviousSibling(e)
       } else if (
@@ -1341,10 +1363,51 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
       ) {
         this.setBGColorForPreviousSibling(e)
       }
+      this.arrowUp = true
+      if (this.first === 1) {
+        this.prevEle = currentElement
+      }
+      this.afterArrow = 1
       currentElement.focus()
     }
   }
-  // }
+  if (e.key === 'ArrowDown' && this.properties.MultiSelect === 2 && !e.shiftKey && (this.afterArrow === 1 || this.isDrag)) {
+    debugger
+    console.log(eventTarget)
+    let currentElement: HTMLDivElement
+    if (nextSiblingEvent === null) {
+      currentElement = prevSiblingEvent.nextSibling! as HTMLDivElement
+    } else {
+      currentElement = nextSiblingEvent
+    }
+    if (this.arrowUp) {
+      const a = this.prevEle.nextSibling as HTMLDivElement
+      const b = a.nextSibling as HTMLDivElement
+      currentElement = b
+    }
+    if (this.isDrag) {
+      let c = this.lastDrag.nextSibling as HTMLDivElement
+      if (c !== null) {
+        currentElement = c
+      } else {
+        currentElement = this.lastDrag
+      }
+    }
+    this.arrowUp = false
+    this.first = 0
+    this.afterArrow = 0
+    this.clearOptionBGColorAndChecked(e)
+    currentElement.focus()
+    this.setBGandCheckedForMatch(currentElement)
+  }
+  if (e.key === 'ArrowUp' && this.properties.MultiSelect === 2 && !e.shiftKey && this.afterArrow === 1) {
+    this.afterArrow = 0
+  }
+  this.isDrag = false
+}
+
+setColorForNode (node: HTMLDivElement) {
+  node.style.backgroundColor = 'rgb(0, 120, 215)'
 }
 
 /**
@@ -1362,6 +1425,8 @@ handleDrag (e: MouseEvent) {
         this.unselectBGColorAndchecked(e)
       } else {
         this.setOptionBGColorAndChecked(e)
+        this.isDrag = true
+        this.lastDrag = e.target as HTMLDivElement
       }
     }
    window.getSelection()!.removeAllRanges()
