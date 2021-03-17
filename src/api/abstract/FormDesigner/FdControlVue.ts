@@ -1084,7 +1084,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
   this.last = Math.round(Date.now() / 1000)
   if (
    this.properties.MatchEntry! === 0 &&
-   x >= 48 && x <= 90 && e.key !== 'ArrowUp' && e.key !== 'ArrowDown'
+   x >= 48 && x <= 90 && e.key !== 'ArrowUp' && e.key !== 'ArrowDown' && this.properties.MultiSelect === 0
   ) {
     this.matchEntry = []
     const prevMatchData =
@@ -1172,7 +1172,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     }
   } else if (
     this.properties.MatchEntry === 1 &&
-    x >= 48 && x <= 90 && e.key !== 'ArrowUp' && e.key !== 'ArrowDown'
+    x >= 48 && x <= 90 && e.key !== 'ArrowUp' && e.key !== 'ArrowDown' && this.properties.MultiSelect === 0
   ) {
     let temp = ''
     const current = Math.round(Date.now() / 1000)
@@ -1233,6 +1233,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     }
   }
   if (this.properties.MatchEntry === 1 && (e.key === 'Backspace' || !this.matchFlag)) {
+    debugger
     if (this.properties.MultiSelect === 0) {
       for (let point = 0; point < tempPath.length; point++) {
         const tbody = tempPath[point] as HTMLDivElement
@@ -1250,7 +1251,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     }
   }
   if (e.key === 'ArrowUp') {
-    if (this.properties.MultiSelect === 0 || this.properties.MultiSelect === 1 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
+    if (this.properties.MultiSelect === 0 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
       for (let point = 0; point < tempPath.length; point++) {
         const element = tempPath[point] as HTMLDivElement
         if (element.className === 'table-body') {
@@ -1274,7 +1275,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
       }
     }
   } else if (e.key === 'ArrowDown') {
-    if (this.properties.MultiSelect === 0 || this.properties.MultiSelect === 1 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
+    if (this.properties.MultiSelect === 0 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
       for (let point = 0; point < tempPath.length; point++) {
         const element = tempPath[point] as HTMLDivElement
         if (element.className === 'table-body') {
