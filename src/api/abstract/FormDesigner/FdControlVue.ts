@@ -16,20 +16,18 @@ export default class FdControlVue extends Vue {
   @Prop({ required: true, type: Boolean }) public isRunMode!: boolean
   @Prop({ required: true, type: Boolean }) public isEditMode!: boolean
   @PropSync('isEditMode') public syncIsEditMode!: boolean
-  @Prop() toolBoxSelectControl: string
+  @Prop() toolBoxSelectControl!: string
   @State((state: rootState) => state.fd.toolBoxSelect) toolBoxSelect!: fdState['toolBoxSelect']
   @Prop({ required: true, type: Object as PropType<controlData> }) public data! : controlData
   @Prop({ required: true, type: String }) public controlId! : string
   @Prop({ default: false }) isActivated: boolean
+  @Prop({ default: -1 }) getHighestZIndex: number
+
   isContentEditable: boolean = false
   selectionData :Array<string> = [];
   matchEntry: Array<number> = [];
   matchIndex = -1;
-  matchItems = '';
-  inputMatch = '';
-  keyCount: number = 0;
   prevNode: HTMLDivElement;
-  matchFlag: boolean = false;
   arrowMove: number = 0;
   afterArrow: number = 0;
   arrowUp: boolean = false;
@@ -39,14 +37,13 @@ export default class FdControlVue extends Vue {
   isDrag: boolean = false;
   start: number = 0;
   last: number = 0;
-  timeup: boolean = false;
-  keyStop: boolean = false;
   isDropdownVisible: boolean = true;
   isItalic: boolean = false;
   tempWeight: string = '400';
   tempStretch: string = 'normal';
   isVisible: boolean = false;
-  tempListBoxComboBoxEvent: Event;
+  tempListBoxComboBoxEvent!: Event;
+  isLargeChange: boolean = false;
   labelStyle = {}
   reverseStyle = {
     display: '',
@@ -77,24 +74,24 @@ export default class FdControlVue extends Vue {
    protected tripleState:number = 0
 
   // dynamic ref form textbox component
-  protected autoSizeTextarea: HTMLLabelElement
+  protected autoSizeTextarea!: HTMLLabelElement
 
   // dynamic ref from checkbox component
-  protected autoSizecheckbox: HTMLDivElement
+  protected autoSizecheckbox!: HTMLDivElement
 
   // dynamic ref from optionButton component
   protected autoSizeOptionButton! : HTMLDivElement
 
   // ref of respective components
-  protected checkboxRef: HTMLDivElement
-  protected optionBtnRef: HTMLDivElement
-  protected textareaRef: HTMLTextAreaElement
+  protected checkboxRef!: HTMLDivElement
+  protected optionBtnRef!: HTMLDivElement
+  protected textareaRef!: HTMLTextAreaElement
 
   protected textSpanRef!: HTMLSpanElement
-  protected imageRef: HTMLImageElement
-  protected logoRef: HTMLSpanElement
-  protected componentRef : HTMLSpanElement
-  protected editableTextRef: FDEditableText
+  protected imageRef!: HTMLImageElement
+  protected logoRef!: HTMLSpanElement
+  protected componentRef!: HTMLSpanElement
+  protected editableTextRef!: FDEditableText
 
   preventClickOnce: boolean = false
   addEventCustomCallback (e: CustomMouseEvent) {
@@ -340,114 +337,125 @@ export default class FdControlVue extends Vue {
 
   protected increaseTheValueAfterDelay () {
     if (this.isSpinButtonScrollBarMouseDown) {
-      this.spinButtonScrollBarClickCount = this.spinButtonScrollBarClickCount + 1
-      let tempVal, tempMax
-      if (this.properties.Max! >= 0 && this.properties.Min! >= 0) {
-        if (this.properties.Max! < this.properties.Min!) {
-          tempMax = this.properties.Max!
-          if (this.properties.Value! < this.properties.Max! && this.properties.Value! > this.properties.Min!) {
-            this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
-          }
-          tempVal = this.properties.Value! as number
-          if (
-            tempVal >= tempMax &&
-              tempVal - tempMax > this.properties.SmallChange!
-          ) {
-            tempVal = tempVal - this.properties.SmallChange!
-          } else if (tempVal >= tempMax) {
-            tempVal = tempMax
-          } else {
-            tempVal = tempMax
-          }
-        } else {
-          tempMax = this.properties.Max!
-          if (this.properties.Value! > this.properties.Max! && this.properties.Value! < this.properties.Min!) {
-            this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
-          }
-          tempVal = this.properties.Value! as number
-          if (
-            tempVal <= tempMax &&
-        tempMax - tempVal > this.properties.SmallChange!
-          ) {
-            tempVal = tempVal + this.properties.SmallChange!
-          } else if (tempVal <= tempMax) {
-            tempVal = tempMax
-          } else {
-            tempVal = tempMax
-          }
-        }
-        this.updateDataModel({ propertyName: 'Value', value: tempVal })
-      } else if (this.properties.Max! < 0 && this.properties.Min! < 0) {
-        if (this.properties.Max! > this.properties.Min!) {
-          tempMax = this.properties.Max!
-          if (this.properties.Value! > this.properties.Max! && this.properties.Value! < this.properties.Min!) {
-            this.updateDataModel({ propertyName: 'Value', value: this.properties.Max })
-          }
-          tempVal = this.properties.Value! as number
-          if (
-            tempVal <= tempMax &&
-          Math.abs(tempVal) - Math.abs(tempMax) > this.properties.SmallChange!
-          ) {
-            tempVal = Math.abs(tempVal) - this.properties.SmallChange!
-          } else if (tempVal <= tempMax) {
-            tempVal = Math.abs(tempMax)
-          } else {
-            tempVal = Math.abs(tempMax)
-          }
-        } else {
-          tempMax = Math.abs(this.properties.Max!)
-          if (this.properties.Value! < this.properties.Max! && this.properties.Value! > this.properties.Min!) {
-            this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
-          }
-          tempVal = Math.abs(this.properties.Value! as number)
-          if (
-            tempVal <= tempMax &&
-        tempMax - tempVal > this.properties.SmallChange!
-          ) {
-            tempVal = tempVal + this.properties.SmallChange!
-          } else if (tempVal <= tempMax) {
-            tempVal = tempMax
-          } else {
-            tempVal = tempMax
-          }
-        }
-        this.updateDataModel({ propertyName: 'Value', value: '-' + tempVal })
-      } else if (this.properties.Max! < this.properties.Min!) {
+      this.increaseTheValueOfControl()
+    }
+  }
+
+  increaseTheValueOfControl () {
+    this.spinButtonScrollBarClickCount = this.spinButtonScrollBarClickCount + 1
+    let change = 0
+    if (this.isLargeChange && this.data.type === 'ScrollBar') {
+      change = this.properties.LargeChange!
+    } else {
+      change = this.properties.SmallChange!
+    }
+    let tempVal, tempMax
+    if (this.properties.Max! >= 0 && this.properties.Min! >= 0) {
+      if (this.properties.Max! < this.properties.Min!) {
         tempMax = this.properties.Max!
-        if (this.properties.Value! > this.properties.Min! && this.properties.Value! < this.properties.Max!) {
-          this.updateDataModel({ propertyName: 'Value', value: this.properties.Max })
+        if (this.properties.Value! < this.properties.Max! && this.properties.Value! > this.properties.Min!) {
+          this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
         }
-        tempVal = this.properties.Value as number
+        tempVal = this.properties.Value! as number
         if (
           tempVal >= tempMax &&
-        tempVal - tempMax >= this.properties.SmallChange!
+            tempVal - tempMax > change
         ) {
-          tempVal = tempVal - this.properties.SmallChange!
-        } else if (tempVal <= tempMax) {
+          tempVal = tempVal - change
+        } else if (tempVal >= tempMax) {
           tempVal = tempMax
         } else {
           tempVal = tempMax
         }
-        this.updateDataModel({ propertyName: 'Value', value: tempVal })
       } else {
         tempMax = this.properties.Max!
         if (this.properties.Value! > this.properties.Max! && this.properties.Value! < this.properties.Min!) {
           this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
         }
-        tempVal = this.properties.Value as number
+        tempVal = this.properties.Value! as number
         if (
           tempVal <= tempMax &&
-        tempMax - tempVal > this.properties.SmallChange!
+      tempMax - tempVal > change
         ) {
-          tempVal = tempVal + this.properties.SmallChange!
+          tempVal = tempVal + change
         } else if (tempVal <= tempMax) {
           tempVal = tempMax
         } else {
           tempVal = tempMax
         }
-        this.updateDataModel({ propertyName: 'Value', value: tempVal })
       }
+      this.updateDataModel({ propertyName: 'Value', value: tempVal })
+    } else if (this.properties.Max! < 0 && this.properties.Min! < 0) {
+      if (this.properties.Max! > this.properties.Min!) {
+        tempMax = this.properties.Max!
+        if (this.properties.Value! > this.properties.Max! && this.properties.Value! < this.properties.Min!) {
+          this.updateDataModel({ propertyName: 'Value', value: this.properties.Max })
+        }
+        tempVal = this.properties.Value! as number
+        if (
+          tempVal <= tempMax &&
+        Math.abs(tempVal) - Math.abs(tempMax) > change
+        ) {
+          tempVal = Math.abs(tempVal) - change
+        } else if (tempVal <= tempMax) {
+          tempVal = Math.abs(tempMax)
+        } else {
+          tempVal = Math.abs(tempMax)
+        }
+      } else {
+        tempMax = Math.abs(this.properties.Max!)
+        if (this.properties.Value! < this.properties.Max! && this.properties.Value! > this.properties.Min!) {
+          this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
+        }
+        tempVal = Math.abs(this.properties.Value! as number)
+        if (
+          tempVal <= tempMax &&
+      tempMax - tempVal > change
+        ) {
+          tempVal = tempVal + change
+        } else if (tempVal <= tempMax) {
+          tempVal = tempMax
+        } else {
+          tempVal = tempMax
+        }
+      }
+      this.updateDataModel({ propertyName: 'Value', value: '-' + tempVal })
+    } else if (this.properties.Max! < this.properties.Min!) {
+      tempMax = this.properties.Max!
+      if (this.properties.Value! > this.properties.Min! && this.properties.Value! < this.properties.Max!) {
+        this.updateDataModel({ propertyName: 'Value', value: this.properties.Max })
+      }
+      tempVal = this.properties.Value as number
+      if (
+        tempVal >= tempMax &&
+      tempVal - tempMax >= change
+      ) {
+        tempVal = tempVal - change
+      } else if (tempVal <= tempMax) {
+        tempVal = tempMax
+      } else {
+        tempVal = tempMax
+      }
+      this.updateDataModel({ propertyName: 'Value', value: tempVal })
+    } else {
+      tempMax = this.properties.Max!
+      if (this.properties.Value! > this.properties.Max! && this.properties.Value! < this.properties.Min!) {
+        this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
+      }
+      tempVal = this.properties.Value as number
+      if (
+        tempVal <= tempMax &&
+      tempMax - tempVal > change
+      ) {
+        tempVal = tempVal + change
+      } else if (tempVal <= tempMax) {
+        tempVal = tempMax
+      } else {
+        tempVal = tempMax
+      }
+      this.updateDataModel({ propertyName: 'Value', value: tempVal })
     }
+    this.isLargeChange = false
   }
   /**
    * @description increaseTheValue calls Vuex Actions to update object and Value Property
@@ -471,114 +479,125 @@ export default class FdControlVue extends Vue {
   }
   protected decreaseTheValueAfterDelay () {
     if (this.isSpinButtonScrollBarMouseDown) {
-      this.spinButtonScrollBarClickCount = this.spinButtonScrollBarClickCount + 1
-      let tempVal, tempMin
-      if (this.properties.Max! >= 0 && this.properties.Min! >= 0) {
-        if (this.properties.Max! < this.properties.Min!) {
-          tempMin = this.properties.Min!
-          if (this.properties.Value! < this.properties.Max! && this.properties.Value! > this.properties.Min!) {
-            this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
-          }
-          tempVal = this.properties.Value! as number
-          if (
-            tempVal <= tempMin &&
-          tempMin - tempVal > this.properties.SmallChange!
-          ) {
-            tempVal = tempVal + this.properties.SmallChange!
-          } else if (tempVal <= tempMin) {
-            tempVal = tempMin
-          } else {
-            tempVal = tempMin
-          }
-        } else {
-          tempMin = this.properties.Min!
-          if (this.properties.Value! > this.properties.Max! && this.properties.Value! < this.properties.Min!) {
-            this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
-          }
-          tempVal = this.properties.Value! as number
-          if (
-            tempVal >= tempMin &&
-            tempVal - tempMin > this.properties.SmallChange!
-          ) {
-            tempVal = tempVal - this.properties.SmallChange!
-          } else if (tempVal >= tempMin) {
-            tempVal = tempMin
-          } else {
-            tempVal = tempMin
-          }
-        }
-        this.updateDataModel({ propertyName: 'Value', value: tempVal })
-      } else if (this.properties.Max! < 0 && this.properties.Min! < 0) {
-        if (this.properties.Max! > this.properties.Min!) {
-          tempMin = this.properties.Min!
-          if (this.properties.Value! > this.properties.Max! && this.properties.Value! < this.properties.Min!) {
-            this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
-          }
-          tempVal = this.properties.Value! as number
-          if (
-            tempVal >= tempMin &&
-          Math.abs(tempMin) - Math.abs(tempVal) > this.properties.SmallChange!
-          ) {
-            tempVal = Math.abs(tempVal) + this.properties.SmallChange!
-          } else if (tempVal <= tempMin) {
-            tempVal = Math.abs(tempMin)
-          } else {
-            tempVal = Math.abs(tempMin)
-          }
-        } else {
-          tempMin = Math.abs(this.properties.Min!)
-          if (this.properties.Value! < this.properties.Max! && this.properties.Value! > this.properties.Min!) {
-            this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
-          }
-          tempVal = Math.abs(this.properties.Value! as number)
-          if (
-            tempVal >= tempMin &&
-            tempVal - tempMin > this.properties.SmallChange!
-          ) {
-            tempVal = tempVal - this.properties.SmallChange!
-          } else if (tempVal >= tempMin) {
-            tempVal = tempMin
-          } else {
-            tempVal = tempMin
-          }
-        }
-        this.updateDataModel({ propertyName: 'Value', value: '-' + tempVal })
-      } else if (this.properties.Max! < this.properties.Min!) {
+      this.decreaseTheValueOfControl()
+    }
+  }
+
+  decreaseTheValueOfControl () {
+    let change = 0
+    if (this.isLargeChange && this.data.type === 'ScrollBar') {
+      change = this.properties.LargeChange!
+    } else {
+      change = this.properties.SmallChange!
+    }
+    this.spinButtonScrollBarClickCount = this.spinButtonScrollBarClickCount + 1
+    let tempVal, tempMin
+    if (this.properties.Max! >= 0 && this.properties.Min! >= 0) {
+      if (this.properties.Max! < this.properties.Min!) {
         tempMin = this.properties.Min!
-        if (this.properties.Value! > this.properties.Min! && this.properties.Value! < this.properties.Max!) {
-          this.updateDataModel({ propertyName: 'Value', value: this.properties.Max })
+        if (this.properties.Value! < this.properties.Max! && this.properties.Value! > this.properties.Min!) {
+          this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
         }
-        tempVal = this.properties.Value as number
+        tempVal = this.properties.Value! as number
         if (
           tempVal <= tempMin &&
-            tempMin - tempVal > this.properties.SmallChange!
+        tempMin - tempVal > change
         ) {
-          tempVal = tempVal + this.properties.SmallChange!
-        } else if (tempVal >= tempMin) {
+          tempVal = tempVal + change
+        } else if (tempVal <= tempMin) {
           tempVal = tempMin
         } else {
           tempVal = tempMin
         }
-        this.updateDataModel({ propertyName: 'Value', value: tempVal })
       } else {
         tempMin = this.properties.Min!
         if (this.properties.Value! > this.properties.Max! && this.properties.Value! < this.properties.Min!) {
           this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
         }
-        tempVal = this.properties.Value as number
+        tempVal = this.properties.Value! as number
         if (
           tempVal >= tempMin &&
-            tempVal - tempMin > this.properties.SmallChange!
+          tempVal - tempMin > change
         ) {
-          tempVal = tempVal - this.properties.SmallChange!
+          tempVal = tempVal - change
         } else if (tempVal >= tempMin) {
           tempVal = tempMin
         } else {
           tempVal = tempMin
         }
-        this.updateDataModel({ propertyName: 'Value', value: tempVal })
       }
+      this.updateDataModel({ propertyName: 'Value', value: tempVal })
+    } else if (this.properties.Max! < 0 && this.properties.Min! < 0) {
+      if (this.properties.Max! > this.properties.Min!) {
+        tempMin = this.properties.Min!
+        if (this.properties.Value! > this.properties.Max! && this.properties.Value! < this.properties.Min!) {
+          this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
+        }
+        tempVal = this.properties.Value! as number
+        if (
+          tempVal >= tempMin &&
+        Math.abs(tempMin) - Math.abs(tempVal) > change
+        ) {
+          tempVal = Math.abs(tempVal) + change
+        } else if (tempVal <= tempMin) {
+          tempVal = Math.abs(tempMin)
+        } else {
+          tempVal = Math.abs(tempMin)
+        }
+      } else {
+        tempMin = Math.abs(this.properties.Min!)
+        if (this.properties.Value! < this.properties.Max! && this.properties.Value! > this.properties.Min!) {
+          this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
+        }
+        tempVal = Math.abs(this.properties.Value! as number)
+        if (
+          tempVal >= tempMin &&
+          tempVal - tempMin > change
+        ) {
+          tempVal = tempVal - change
+        } else if (tempVal >= tempMin) {
+          tempVal = tempMin
+        } else {
+          tempVal = tempMin
+        }
+      }
+      this.updateDataModel({ propertyName: 'Value', value: '-' + tempVal })
+    } else if (this.properties.Max! < this.properties.Min!) {
+      tempMin = this.properties.Min!
+      if (this.properties.Value! > this.properties.Min! && this.properties.Value! < this.properties.Max!) {
+        this.updateDataModel({ propertyName: 'Value', value: this.properties.Max })
+      }
+      tempVal = this.properties.Value as number
+      if (
+        tempVal <= tempMin &&
+          tempMin - tempVal > change
+      ) {
+        tempVal = tempVal + change
+      } else if (tempVal >= tempMin) {
+        tempVal = tempMin
+      } else {
+        tempVal = tempMin
+      }
+      this.updateDataModel({ propertyName: 'Value', value: tempVal })
+    } else {
+      tempMin = this.properties.Min!
+      if (this.properties.Value! > this.properties.Max! && this.properties.Value! < this.properties.Min!) {
+        this.updateDataModel({ propertyName: 'Value', value: this.properties.Min })
+      }
+      tempVal = this.properties.Value as number
+      if (
+        tempVal >= tempMin &&
+          tempVal - tempMin > change
+      ) {
+        tempVal = tempVal - change
+      } else if (tempVal >= tempMin) {
+        tempVal = tempMin
+      } else {
+        tempVal = tempMin
+      }
+      this.updateDataModel({ propertyName: 'Value', value: tempVal })
     }
+    this.isLargeChange = false
   }
   /**
    * @description decreaseTheValue calls Vuex Actions to update object and Value Property
@@ -1002,7 +1021,7 @@ handleMultiSelect (e: MouseEvent) {
               for (let k = startPoint; k <= endPoint; k++) {
                 const node = ele.childNodes[k] as HTMLDivElement
                 const tempNode = node.childNodes[0].childNodes[0] as HTMLInputElement
-                node.style.backgroundColor = 'rgb(0, 120, 215)'
+                node.style.backgroundColor = 'rgb(59, 122, 231)'
                 if (
                   this.properties.ListStyle === 1 &&
              !tempNode.checked
@@ -1053,18 +1072,6 @@ handleMultiSelect (e: MouseEvent) {
   this.updateDataModel({ propertyName: 'Value', value: a.innerText[0] })
   this.updateDataModel({ propertyName: 'Text', value: a.innerText[0] })
 }
-timer = 0;
-timeoutVal = 1000;
-
-handleKeyup (e: KeyboardEvent) {
-  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
-    window.clearTimeout(this.timer)
-    this.timer = window.setTimeout(() => {
-      this.keyStop = true
-    }, this.timeoutVal)
-  }
-}
-
 /**
  * @description updates the dataModel listBox object properties when keydown
  * @function handleExtendArrowKeySelect
@@ -1073,97 +1080,69 @@ handleKeyup (e: KeyboardEvent) {
  *
  */
 handleExtendArrowKeySelect (e: KeyboardEvent) {
-  window.clearTimeout(this.timer)
   const x = e.key.toUpperCase().charCodeAt(0)
   const tempPath = e.composedPath()
   const eventTarget = e.target as HTMLTableRowElement
   const nextSiblingEvent = eventTarget.nextSibling as HTMLDivElement
   const prevSiblingEvent = eventTarget.previousSibling as HTMLDivElement
-  this.keyCount++
-  const prev = eventTarget
-  this.last = Math.round(Date.now() / 1000)
   if (
-   this.properties.MatchEntry! === 0 &&
-   x >= 48 && x <= 90 && e.key !== 'ArrowUp' && e.key !== 'ArrowDown' && this.properties.MultiSelect === 0
+  this.properties.MatchEntry! === 0 &&
+  x >= 48 && x <= 90
   ) {
     this.matchEntry = []
     const prevMatchData =
-   this.extraDatas.MatchData === '' ? e.key : this.extraDatas.MatchData
+  this.extraDatas.MatchData === '' ? e.key : this.extraDatas.MatchData
     this.updateDataModelExtraData({ propertyName: 'MatchData', value: prevMatchData !== e.key ? e.key : prevMatchData })
 
     for (let index = 0; index < tempPath.length; index++) {
       const element = tempPath[index] as HTMLDivElement
       if (element.className === 'table-body') {
-        for (let i = 0; i < element.childNodes.length; i++) {
-          const el = element.childNodes[i] as HTMLDivElement
-          if (el.style.backgroundColor === 'rgb(0, 120, 215)') {
-            this.prevNode = el
-          }
-        }
         for (let index = 0; index < element.childNodes.length; index++) {
           const ei = element.childNodes[index] as HTMLDivElement
           let splitData = ei.innerText.replace(/\t/g, ' ').split(' ')
           let si = 0
+          // if (this.properties.ListStyle === 0) {
+          //   si = -1
+          // }
           si = -1
-          if (si + 1 < splitData.length) {
-            if (splitData[si + 1][0].includes(this.extraDatas.MatchData!.toLowerCase())) {
-              this.matchEntry.push(index)
-            }
+          if (splitData[si + 1][0].includes(this.extraDatas.MatchData!)) {
+            this.matchEntry.push(index)
           }
         }
-        if (this.keyCount <= 1) {
-          this.prevNode = prev
-        }
+
         if (
-         this.extraDatas.MatchData![0] !== undefined &&
-         this.extraDatas.MatchData![0] === e.key &&
-         this.extraDatas.MatchData!.length > 0
+        this.extraDatas.MatchData![0] !== undefined &&
+        this.extraDatas.MatchData![0] === e.key &&
+        this.extraDatas.MatchData!.length > 0
         ) {
+          const tempChildNode = element.childNodes[this.matchEntry[this.matchIndex]] as HTMLDivElement
           this.matchIndex++
           if (
             this.matchIndex === this.matchEntry.length &&
-           prevMatchData === this.extraDatas.MatchData
+          prevMatchData === this.extraDatas.MatchData
           ) {
             this.matchIndex = 0
-            const tempChildNode = element.childNodes[this.matchEntry[this.matchIndex]] as HTMLDivElement
             this.clearOptionBGColorAndChecked(e)
             this.setBGandCheckedForMatch(
               tempChildNode
             )
-            if (this.matchEntry.length === 0) {
-              this.clearOptionBGColorAndChecked(e)
-              this.setBGandCheckedForMatch(
-                this.prevNode
-              )
-            }
             break
           } else if (prevMatchData !== this.extraDatas.MatchData) {
             this.matchIndex = 0
-            const tempChildNode = element.childNodes[this.matchEntry[this.matchIndex]] as HTMLDivElement
             this.clearOptionBGColorAndChecked(e)
             this.setBGandCheckedForMatch(
               tempChildNode
             )
-            if (this.matchEntry.length === 0) {
-              this.clearOptionBGColorAndChecked(e)
-              this.setBGandCheckedForMatch(
-                this.prevNode
-              )
-            }
             break
           } else {
             if (this.matchEntry.length === 0) {
-              this.clearOptionBGColorAndChecked(e)
-              this.setBGandCheckedForMatch(
-                this.prevNode
-              )
-            } else {
-              const tempChildNode = element.childNodes[this.matchEntry[this.matchIndex]] as HTMLDivElement
-              this.clearOptionBGColorAndChecked(e)
-              this.setBGandCheckedForMatch(
-                tempChildNode
-              )
+              this.matchEntry.push(0)
+              this.matchIndex = 0
             }
+            this.clearOptionBGColorAndChecked(e)
+            this.setBGandCheckedForMatch(
+              tempChildNode
+            )
             break
           }
         }
@@ -1172,17 +1151,9 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     }
   } else if (
     this.properties.MatchEntry === 1 &&
-    x >= 48 && x <= 90 && e.key !== 'ArrowUp' && e.key !== 'ArrowDown' && this.properties.MultiSelect === 0
+  x >= 48 && x <= 90
   ) {
-    let temp = ''
-    const current = Math.round(Date.now() / 1000)
-    if (current - this.start >= 3) {
-      temp = this.matchItems + e.key
-    } else {
-      temp = this.extraDatas.MatchData + e.key
-    }
-    this.start = Math.round(Date.now() / 1000)
-
+    let temp = this.extraDatas.MatchData + e.key
     this.updateDataModelExtraData({ propertyName: 'MatchData', value: temp })
 
     for (let point = 0; point < tempPath.length; point++) {
@@ -1195,58 +1166,37 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
             .replace(/\t/g, ' ')
             .split(' ')
           let sii = 0
+          // if (this.properties.ListStyle === 0) {
+          //   sii = -1
+          // }
           sii = -1
-          if (sii + 1 < matchEntryComplete.length) {
-            if (
-              matchEntryComplete[sii + 1][0].includes(this.extraDatas.MatchData!.toLowerCase()) &&
-            this.extraDatas.MatchData!.length < 2
-            ) {
-              this.matchEntry.push(p)
-            } else if (
-              matchEntryComplete[sii + 1].includes(this.extraDatas.MatchData!.toLowerCase()) &&
-            this.extraDatas.MatchData!.length > 1
-            ) {
-              this.matchEntry.push(p)
-            }
+          if (
+            matchEntryComplete[sii + 1][0].includes(this.extraDatas.MatchData!) &&
+          this.extraDatas.MatchData!.length < 2
+          ) {
+            this.matchEntry.push(p)
+          } else if (
+            matchEntryComplete[sii + 1].includes(this.extraDatas.MatchData!) &&
+          this.extraDatas.MatchData!.length > 1
+          ) {
+            this.matchEntry.push(p)
           }
         }
 
-        if (this.extraDatas.MatchData!.length <= 1 && this.matchEntry.length !== 0) {
+        if (this.extraDatas.MatchData!.length <= 1) {
           let singleMatch = tbody.childNodes[this.matchEntry[0]] as HTMLDivElement
           this.clearOptionBGColorAndChecked(e)
           this.setBGandCheckedForMatch(singleMatch)
-          this.matchFlag = true
           break
         } else if (
-         this.extraDatas.MatchData!.length > 1 &&
-         this.matchEntry.length !== 0
+        this.extraDatas.MatchData!.length > 1 &&
+        this.matchEntry.length !== 0
         ) {
           let completeAutoMatch = tbody.childNodes[this.matchEntry[0]] as HTMLDivElement
           this.clearOptionBGColorAndChecked(e)
           this.setBGandCheckedForMatch(completeAutoMatch)
-          this.matchFlag = true
-        } else if (this.properties.MultiSelect !== 2) {
-          this.matchFlag = false
         }
         break
-      }
-    }
-  }
-  if (this.properties.MatchEntry === 1 && (e.key === 'Backspace' || !this.matchFlag)) {
-    debugger
-    if (this.properties.MultiSelect === 0) {
-      for (let point = 0; point < tempPath.length; point++) {
-        const tbody = tempPath[point] as HTMLDivElement
-        if (tbody.className === 'table-body') {
-          if (this.keyStop && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
-            setTimeout(() => {
-              let singleMatch = tbody.childNodes[0] as HTMLDivElement
-              this.clearOptionBGColorAndChecked(e)
-              this.setBGandCheckedForMatch(singleMatch)
-            }, 2000)
-          }
-          break
-        }
       }
     }
   }
@@ -1257,7 +1207,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
         if (element.className === 'table-body') {
           for (let index = 0; index < element.childNodes.length; index++) {
             const ei = element.childNodes[index] as HTMLDivElement
-            if (ei.style.backgroundColor === 'rgb(0, 120, 215)' && index !== 0) {
+            if (ei.style.backgroundColor === 'rgb(59, 122, 231)' && index !== 0) {
               this.clearOptionBGColorAndChecked(e)
               const ele = element.childNodes[--index] as HTMLDivElement
               this.setBGandCheckedForMatch(ele)
@@ -1281,7 +1231,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
         if (element.className === 'table-body') {
           for (let index = 0; index < element.childNodes.length; index++) {
             const ei = element.childNodes[index] as HTMLDivElement
-            if (ei.style.backgroundColor === 'rgb(0, 120, 215)') {
+            if (ei.style.backgroundColor === 'rgb(59, 122, 231)') {
               this.clearOptionBGColorAndChecked(e)
               if (index === element.childNodes.length - 1) {
                 index = element.childNodes.length - 2
@@ -1303,9 +1253,8 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
   if (
     e.key === 'ArrowDown' &&
     e.shiftKey === true &&
-   (nextSiblingEvent !== null || prevSiblingEvent.nextSibling !== null)
+    (nextSiblingEvent !== null || prevSiblingEvent.nextSibling !== null)
   ) {
-    debugger
     let currentElement: HTMLDivElement
     if (nextSiblingEvent === null) {
       currentElement = prevSiblingEvent.nextSibling! as HTMLDivElement
@@ -1313,10 +1262,10 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
       currentElement = nextSiblingEvent
     }
     if (this.properties.MultiSelect === 2 && eventTarget.nextSibling !== null) {
-      if (eventTarget.style.backgroundColor !== 'rgb(0, 120, 215)') {
+      if (eventTarget.style.backgroundColor !== 'rgb(59, 122, 231)') {
         this.setOptionBGColorAndChecked(e)
       } else if (
-        eventTarget.style.backgroundColor === 'rgb(0, 120, 215)' &&
+        eventTarget.style.backgroundColor === 'rgb(59, 122, 231)' &&
         currentElement!.style.backgroundColor !== ''
       ) {
         this.setOptionBGColorAndChecked(e)
@@ -1325,7 +1274,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
         this.setBGColorForNextSibling(e)
       } else if (
       eventTarget.nextSibling!.nextSibling === null &&
-      currentElement!.style.backgroundColor !== 'rgb(0, 120, 215)'
+      currentElement!.style.backgroundColor !== 'rgb(59, 122, 231)'
       ) {
         this.setBGColorForNextSibling(e)
       }
@@ -1337,9 +1286,8 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
   } else if (
     e.key === 'ArrowUp' &&
     e.shiftKey === true &&
-   (prevSiblingEvent !== null || nextSiblingEvent.previousSibling !== null)
+    (prevSiblingEvent !== null || nextSiblingEvent.previousSibling !== null)
   ) {
-    debugger
     this.first++
     let currentElement: HTMLDivElement
     if (prevSiblingEvent === null) {
@@ -1349,7 +1297,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     }
     if (this.properties.MultiSelect === 2 && currentElement !== null && eventTarget.previousSibling !== null) {
       if (
-        eventTarget.style.backgroundColor === 'rgb(0, 120, 215)' &&
+        eventTarget.style.backgroundColor === 'rgb(59, 122, 231)' &&
         currentElement.style.backgroundColor !== ''
       ) {
         this.setOptionBGColorAndChecked(e)
@@ -1360,7 +1308,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
         this.setBGColorForPreviousSibling(e)
       } else if (
         eventTarget.previousSibling!.previousSibling === null &&
-        currentElement.style.backgroundColor !== 'rgb(0, 120, 215)'
+        currentElement.style.backgroundColor !== 'rgb(59, 122, 231)'
       ) {
         this.setBGColorForPreviousSibling(e)
       }
@@ -1373,8 +1321,6 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     }
   }
   if (e.key === 'ArrowDown' && this.properties.MultiSelect === 2 && !e.shiftKey && (this.afterArrow === 1 || this.isDrag)) {
-    debugger
-    console.log(eventTarget)
     let currentElement: HTMLDivElement
     if (nextSiblingEvent === null) {
       currentElement = prevSiblingEvent.nextSibling! as HTMLDivElement
@@ -1407,10 +1353,6 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
   this.isDrag = false
 }
 
-setColorForNode (node: HTMLDivElement) {
-  node.style.backgroundColor = 'rgb(0, 120, 215)'
-}
-
 /**
 * @description updates the dataModel listBox object properties when mouseenter
 * @function handleDrag
@@ -1422,12 +1364,10 @@ handleDrag (e: MouseEvent) {
   const etarget = e.target as HTMLDivElement
   if (this.properties.MultiSelect === 2) {
     if (e.which === 1) {
-      if (etarget.style.backgroundColor === 'rgb(0, 120, 215)') {
+      if (etarget.style.backgroundColor === 'rgb(59, 122, 231)') {
         this.unselectBGColorAndchecked(e)
       } else {
         this.setOptionBGColorAndChecked(e)
-        this.isDrag = true
-        this.lastDrag = e.target as HTMLDivElement
       }
     }
    window.getSelection()!.removeAllRanges()
@@ -1445,9 +1385,9 @@ setBGColorForNextSibling (e: MouseEvent | KeyboardEvent) {
     const nextSiblingEvent = targetEvent.nextSibling as HTMLDivElement
     const nextSiblingCheckedEvent = nextSiblingEvent.children[0].childNodes[0] as HTMLInputElement
     nextSiblingEvent.style.backgroundColor =
-   nextSiblingEvent.style.backgroundColor === 'rgb(0, 120, 215)'
+   nextSiblingEvent.style.backgroundColor === 'rgb(59, 122, 231)'
      ? ''
-     : 'rgb(0, 120, 215)'
+     : 'rgb(59, 122, 231)'
     if (
       this.properties.ListStyle === 1 &&
    this.properties.MultiSelect === 2
@@ -1468,9 +1408,9 @@ setBGColorForPreviousSibling (e: KeyboardEvent) {
     const prevSiblingEvent = targetEvent.previousSibling as HTMLDivElement
     const prevSiblingCheckedEvent = prevSiblingEvent.children[0].childNodes[0] as HTMLInputElement
     prevSiblingEvent.style.backgroundColor =
-   prevSiblingEvent.style.backgroundColor === 'rgb(0, 120, 215)'
+   prevSiblingEvent.style.backgroundColor === 'rgb(59, 122, 231)'
      ? ''
-     : 'rgb(0, 120, 215)'
+     : 'rgb(59, 122, 231)'
     if (
       this.properties.ListStyle === 1 &&
    this.properties.MultiSelect === 2
@@ -1532,9 +1472,9 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
   const childNodeChecked = currentTargetElement.children[0].childNodes[0] as HTMLInputElement
   if (this.data.type === 'ComboBox') {
     currentTargetElement.style.backgroundColor =
-   currentTargetElement.style.backgroundColor === 'rgb(0, 120, 215)'
+   currentTargetElement.style.backgroundColor === 'rgb(59, 122, 231)'
      ? ''
-     : 'rgb(0, 120, 215)'
+     : 'rgb(59, 122, 231)'
   }
   if (this.data.type === 'ComboBox') {
     childNodeChecked.checked = !childNodeChecked.checked
@@ -1550,40 +1490,40 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
     ) {
       childNodeChecked.checked = !childNodeChecked.checked
       if (childNodeChecked.checked === true) {
-        currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
+        currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
       } else {
         currentTargetElement.style.backgroundColor = ''
       }
     } else {
       childNodeChecked.checked = !childNodeChecked.checked
       if (this.properties.MultiSelect === 0) {
-        currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
+        currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
         if (this.properties.ListStyle === 1) {
           if (childNodeChecked.checked) {
-            currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
+            currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
           }
         }
       } else if (this.properties.MultiSelect === 1) {
-        if (currentTargetElement.style.backgroundColor === 'rgb(0, 120, 215)') {
+        if (currentTargetElement.style.backgroundColor === 'rgb(59, 122, 231)') {
           currentTargetElement.style.backgroundColor = ''
           if (this.properties.ListStyle === 1) {
             if (childNodeChecked.checked) {
-              currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
+              currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
             } else {
               currentTargetElement.style.backgroundColor = ''
             }
           }
         } else {
-          currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
+          currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
           if (this.properties.ListStyle === 1) {
             if (childNodeChecked.checked) {
-              currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
+              currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
             }
           }
         }
       } else if (this.properties.MultiSelect === 2) {
         childNodeChecked.checked = true
-        currentTargetElement.style.backgroundColor = 'rgb(0, 120, 215)'
+        currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
       }
     }
   }
@@ -1605,10 +1545,13 @@ unselectBGColorAndchecked (e: KeyboardEvent | MouseEvent) {
 */
 setBGandCheckedForMatch (singleMatch: HTMLDivElement) {
   if (singleMatch !== undefined) {
-    singleMatch.style.backgroundColor = 'rgb(0, 120, 215)'
+    singleMatch.style.backgroundColor = 'rgb(59, 122, 231)'
     if ((this.properties.ListStyle === 1)) {
       const tempNode = singleMatch.childNodes[0].childNodes[0] as HTMLInputElement
-      tempNode.checked = true
+      tempNode.checked = !tempNode.checked
+      if (singleMatch.tabIndex === 0) {
+        tempNode.checked = true
+      }
     }
   }
 }

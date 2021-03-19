@@ -17,7 +17,7 @@
             :style="tdStyleObj"
             v-if="properties.ListStyle === 1"
             class="tdClass"
-          ><div class="square"></div></template>
+          ></template>
           <template v-for="(a, columnIndex) in extraDatas.ColumnHeadsValues">
             <div
               v-if="
@@ -31,13 +31,14 @@
               {{ a }}
             </div>
           </template>
-        <hr v-if="properties.ColumnHeads" class="hrStyle" :style="hrStyleObj"/>
         </div>
+        <hr v-if="properties.ColumnHeads" class="hrStyle" :style="hrStyleObj"/>
       </div>
       <div class="table-body">
         <div
           :tabindex="index"
           class="tr"
+          :style="trStyleObj"
           ref="listStyleRef"
           v-for="(item, index) of extraDatas.RowSourceData"
           :key="index"
@@ -45,7 +46,6 @@
           @keydown.esc="releaseEditMode"
           @blur.stop="clearMatchEntry"
           @keydown.stop="handleExtendArrowKeySelect"
-          @keyup="handleKeyup"
           @mousedown="
             isRunMode || isEditMode ? handleMousedown($event) : ''
           "
@@ -103,7 +103,7 @@
                   <span v-if="i < 10" class="bar" :key="i" :style="{float:'right', color: properties.ForeColor}">|</span>
                 </div>
                 </div>
-        <!-- <hr v-if="properties.ColumnHeads && properties.ColumnCount !== 0" class="hrStyle" :style="hrStyleObj"/> -->
+        <hr v-if="properties.ColumnHeads && properties.ColumnCount !== 0" class="hrStyle" :style="hrStyleObj"/>
         <div></div>
       </div>
     </div>
@@ -127,14 +127,26 @@ import { EventBus } from '@/FormDesigner/event-bus'
   name: 'FDListBox'
 })
 export default class FDListBox extends Mixins(FdControlVue) {
-  @Ref('listStyleRef') listStyleRef: HTMLDivElement[];
+  @Ref('listStyleRef') listStyleRef!: HTMLDivElement[];
   @Ref('listBoxTableRef') listBoxTableRef!: HTMLDivElement;
   @Ref('listStyleOuterRef') listStyleOuterRef!: HTMLDivElement;
-  @Prop() isActivated: boolean;
-  @Prop() toolBoxSelectControl: string
-  checkedvalue: boolean;
-  $el: HTMLDivElement;
+  @Prop() isActivated: boolean = false;
+  @Prop() toolBoxSelectControl: string = ''
+  checkedvalue: boolean = false;
+  $el!: HTMLDivElement;
 
+  get trStyleObj () {
+    let width:string = '0px'
+    let height: string = '0px'
+    if (this.listStyleOuterRef && (this.listStyleOuterRef.scrollHeight > this.listStyleOuterRef.clientHeight)) {
+      width = 'calc(100% - 20px)'
+    } else {
+      width = 'calc(100% - 3px)'
+    }
+    return {
+      width: width
+    }
+  }
   get emptyColHeads () {
     return {
       height: '15px'
@@ -144,31 +156,16 @@ export default class FDListBox extends Mixins(FdControlVue) {
     const controlProp = this.properties
     return {
       textAlign: controlProp.TextAlign === 0 ? 'left' : controlProp.TextAlign === 2 ? 'right' : 'center',
-      borderLeft: index >= this.extraDatas.ColumnHeadsValues!.length - 1 ? '' : (index < controlProp.ColumnCount! - 1) ? '1px solid' : controlProp.ColumnCount === -1 ? (index < this.extraDatas.RowSourceData![0].length - 1) ? '1px solid' : '' : '',
-      borderLeftColor: controlProp.ForeColor,
+      borderRight: index >= this.extraDatas.ColumnHeadsValues!.length - 1 ? '' : (index < controlProp.ColumnCount! - 1) ? '1px solid' : controlProp.ColumnCount === -1 ? (index < this.extraDatas.RowSourceData![0].length - 1) ? '1px solid' : '' : '',
+      borderRightColor: controlProp.ForeColor,
       overflow: 'hidden'
     }
   }
 
   get hrStyleObj () {
     const controlProp = this.properties
-    let width = '100%'
-    if (this.properties.ListStyle === 1) {
-      if ((this.listStyleRef && this.listStyleRef[0]) && (this.listBoxTableRef && this.listBoxTableRef.children[0] && this.listBoxTableRef.children[0].children[0])) {
-        if (this.listStyleRef[0].scrollWidth > this.listBoxTableRef.children[0].children[0].scrollWidth) {
-          width = this.listStyleRef[0].scrollWidth + 'px'
-        } else if (this.properties.Width! > this.listStyleRef[0].scrollWidth) {
-          width = controlProp.Width! + 'px'
-        } else {
-          width = this.listBoxTableRef.children[0].children[0].scrollWidth + 'px'
-        }
-      }
-    } else {
-      width = '100%'
-    }
     return {
-      borderTop: '1px solid' + controlProp.ForeColor,
-      width: this.listBoxTableRef.clientWidth
+      borderTop: '1px solid' + controlProp.ForeColor
     }
   }
 
@@ -176,7 +173,8 @@ export default class FDListBox extends Mixins(FdControlVue) {
     const controlProp = this.properties
     this.updateColumns()
     return {
-      backgroundColor: controlProp.BackColor
+      backgroundColor: controlProp.BackColor,
+      width: '100%'
     }
   }
 
@@ -312,7 +310,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
                 Vue.nextTick(() => {
                   if (this.listBoxTableRef && this.listBoxTableRef.children[0] && this.listBoxTableRef.children[0].children[0]) {
                     for (let j = 0; j < this.listBoxTableRef.children[0].children[0].children.length; j++) {
-                      if (this.listBoxTableRef && this.listBoxTableRef.children[0] && this.listBoxTableRef.children[0].children[0] && this.listBoxTableRef.children[0].children[0].children[j] && (this.listBoxTableRef.children[0].children[0].children[j].className !== 'square')) {
+                      if (this.listBoxTableRef && this.listBoxTableRef.children[0] && this.listBoxTableRef.children[0].children[0] && this.listBoxTableRef.children[0].children[0].children[j]) {
                         const headWidth = this.listBoxTableRef.children[0].children[0].children[j] as HTMLDivElement
                         if (this.properties.ColumnCount !== -1) {
                           if (j === this.listBoxTableRef.children[0].children[0].children.length - 1) {
@@ -545,6 +543,10 @@ export default class FDListBox extends Mixins(FdControlVue) {
           finalWidths = this.calculateColumnWidths()
           if (this.listBoxTableRef.children[0].children[0]) {
             for (let i = 0; i < this.listBoxTableRef.children[0].children.length; i++) {
+              for (let j = 0; j < this.listBoxTableRef.children[0].children[i].children.length; j++) {
+                const width = this.listBoxTableRef.children[0].children[i].children[j] as HTMLDivElement
+                width.style.minWidth = '0px'
+              }
               if (this.properties.ListStyle === 0) {
                 for (let j = 0; j < this.listBoxTableRef.children[0].children[i].children.length; j++) {
                   const width = this.listBoxTableRef.children[0].children[i].children[j] as HTMLDivElement
@@ -574,6 +576,19 @@ export default class FDListBox extends Mixins(FdControlVue) {
                         width.style.width = finalWidths[j] + 'px'
                       } else {
                         width.style.width = finalWidths[j] - 4 + 'px'
+                      }
+                    }
+                  }
+                }
+                for (let j = 0; j < this.listBoxTableRef.children[0].children[i].children.length; j++) {
+                  let colWidths = this.properties.ColumnWidths!
+                  let columnWidthCount = colWidths.split(';').length
+                  let totalColumnCount = this.properties.ColumnCount! < this.extraDatas.RowSourceData![0].length ? this.properties.ColumnCount! : this.extraDatas.RowSourceData![0].length
+                  if (columnWidthCount > 0) {
+                    if (columnWidthCount < totalColumnCount) {
+                      for (let k = columnWidthCount; k < totalColumnCount!; k++) {
+                        const width = this.listBoxTableRef.children[0].children[i].children[k] as HTMLDivElement
+                        width.style.minWidth = '100px'
                       }
                     }
                   }
@@ -782,7 +797,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
                         const node = ele.childNodes[k] as HTMLDivElement
                         const tempNode = node.childNodes[0]
                           .childNodes[0] as HTMLInputElement
-                        node.style.backgroundColor = 'rgb(0, 120, 215)'
+                        node.style.backgroundColor = 'rgb(59, 122, 231)'
                         if (this.properties.ListStyle === 1 && !tempNode.checked) {
                           // tempNode.checked = !tempNode.checked
                           tempNode.checked = true
@@ -848,7 +863,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
                         const node = ele.childNodes[k] as HTMLDivElement
                         const tempNode = node.childNodes[0]
                           .childNodes[0] as HTMLInputElement
-                        node.style.backgroundColor = 'rgb(0, 120, 215)'
+                        node.style.backgroundColor = 'rgb(59, 122, 231)'
                         if (this.properties.ListStyle === 1 && !tempNode.checked) {
                           // tempNode.checked = !tempNode.checked
                           tempNode.checked = true
@@ -927,10 +942,10 @@ export default class FDListBox extends Mixins(FdControlVue) {
   getSelectedStyle () {
     if (this.listStyleRef) {
       for (let i = 0; i < this.listStyleRef.length; i++) {
-        if (this.listStyleRef[i].style.backgroundColor === 'rgb(0, 120, 215)') {
+        if (this.listStyleRef[i].style.backgroundColor === 'rgb(59, 122, 231)') {
           for (let j = 0; j < this.listStyleRef[i].children.length; j++) {
             const a = this.listStyleRef[i].children[j] as HTMLDivElement
-            a.style.backgroundColor = 'rgb(0, 120, 215)'
+            a.style.backgroundColor = 'rgb(59, 122, 231)'
           }
         } else if (this.listStyleRef[i].style.backgroundColor === '') {
           for (let j = 0; j < this.listStyleRef[i].children.length; j++) {
@@ -1125,7 +1140,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
           if (this.properties.BoundColumn! === 0) {
             for (let i = 0; i < this.extraDatas.RowSourceData!.length; i++) {
               const x = this.listStyleRef[i] as HTMLInputElement
-              if (this.listStyleRef[i].style.backgroundColor === 'rgb(0, 120, 215)') {
+              if (this.listStyleRef[i].style.backgroundColor === 'rgb(59, 122, 231)') {
                 this.updateDataModel({ propertyName: 'Value', value: i })
                 if (this.properties.TextColumn === -1) {
                   this.updateDataModel({ propertyName: 'Text', value: this.extraDatas.RowSourceData![i][0] })
@@ -1145,7 +1160,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
               }
               const x = this.listStyleRef[i] as HTMLInputElement
               if (x.checked) {
-                this.listStyleRef[i].style.backgroundColor = 'rgb(0, 120, 215)'
+                this.listStyleRef[i].style.backgroundColor = 'rgb(59, 122, 231)'
               }
               if (!x.checked) {
                 this.listStyleRef[i].style.backgroundColor = ''
@@ -1288,7 +1303,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
           this.extraDatas.RowSourceData![i][this.properties.BoundColumn! - 1] === this.extraDatas.ControlSourceValue!
         ) {
           const listRow = this.listStyleRef[i]
-          listRow.style.backgroundColor = 'rgb(0, 120, 215)'
+          listRow.style.backgroundColor = 'rgb(59, 122, 231)'
         }
       }
     }
@@ -1371,7 +1386,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
   margin: 1px;
   border-color: rgb(52, 52, 255);
   border-radius: 2px;
-  background-color: rgb(0, 120, 215);
+  background-color: rgb(59, 122, 231);
 }
 .fa {
   margin-left: 4px;
@@ -1406,15 +1421,13 @@ export default class FDListBox extends Mixins(FdControlVue) {
   grid-template-columns: 100%;
 }
 .table-style {
-  min-width: min-content;
   width: 100%;
 }
 .theadClass {
-  width: auto !important;
   white-space: nowrap;
   position: sticky;
   top: 0px;
-  z-index: 3 !important;
+  z-index: 1;
 }
 .tdClass {
   width: 15px;
@@ -1422,44 +1435,26 @@ export default class FDListBox extends Mixins(FdControlVue) {
 }
 .tdClassIn {
   width: fit-content !important;
-  min-width: 0px !important;
+  min-width: 14px !important;
 }
 .inputClass {
   margin: 0;
 }
 .thead {
-  /* width: auto !important; */
-  display: block;
-  z-index: 3;
-  margin-right: auto;
-  /* position: sticky; */
+  position: sticky;
   top: 0;
   overflow: hidden;
   text-decoration: underline;
   white-space: nowrap;
 }
-.square {
-  border-bottom: 1px solid;
-  border-right: 1px solid;
-  display: inline-block !important;
-  width: 13px !important;
-}
 .colHeadsClass {
-  border-left: 1px solid;
-  border-bottom: 1px solid;
-  display: inline-block !important;
-
+  display: inline-block;
   width: 100px;
 }
 .hrStyle {
-  display: inline-block !important;
+  display: block !important;
   margin: 0px;
   width: 100% !important;
-  background-color: black;
-  height: 0px;
-  z-index: 3;
-  position: relative;
-  border-bottom: 0px !important;
 }
 .bar {
   font-size: 13px;

@@ -283,14 +283,15 @@ export class ControlPropertyData {
           ControlSourceValue: 'c3',
           ColumnHeadsValues: ['column1', 'column2', 'column3'],
           RowSourceData: [
-            ['a', 'k', 'a1'],
-            ['b', 'b', 'b2'],
-            ['c', 's', 'c3'],
-            ['d', 'a', 'd4'],
-            ['e', 'd', 'e5'],
-            ['f', 'wef', 'f6'],
-            ['g', 'awe', 'g7'],
-            ['h', 'rty', 'h8']
+            ['hello, how are you?', 'k', 'a1'],
+            ['ajay', 'b', 'b2'],
+            ['vijay', 's', 'c3'],
+            ['chandan', 'a', 'd4'],
+            ['google', 'd', 'e5'],
+            ['height', 'wef', 'f6'],
+            ['width', 'awe', 'g7'],
+            ['caption', 'rty', 'h8'],
+            ['car', 'rty', 'h8']
           ],
           zIndex: -1
         },

@@ -32,6 +32,7 @@
           data-gramm="false"
           ref="textareaRef"
           :style="cssStyleProperty"
+          @focus="closeTextMenu"
           @mouseover="updateMouseCursor"
           wrap="off"
           @dblclick="dblclick($event)"
@@ -40,7 +41,7 @@
           :maxlength="properties.MaxLength !== 0 ? properties.MaxLength : ''"
           @blur="handleBlur($event, textareaRef, hideSelectionDiv)"
           @click="handleClick($event, textareaRef, hideSelectionDiv)"
-          @input="handleTextInput($event)"
+          @keyup="handleTextInput($event)"
           class="text-box-design"
           :value="properties.Text"
           @dragstart="dragBehavior"
@@ -227,6 +228,7 @@
               <div
                 :tabindex="index"
                 class="tr"
+                v-bind:class="{active: isActive}"
                 @mouseover="mouseOverEvent"
                 :disabled="!properties.Enabled || properties.Locked"
                 v-for="(item, index) of tempArray"
@@ -321,6 +323,31 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   headWidth: string = '100%';
   controlZIndex: number = -1;
   newColumnWidthsValue: string = '';
+  count: number = 0;
+  enteredItems: Array<string> = [];
+  repeat: Array<string> = [];
+  num: Array<string> = [];
+  items: Array<string> = [];
+  prev: string = '';
+  start: number = 0;
+  wordCount: number = 0;
+  prevLen: number = 0;
+  flag: number = 0;
+  comboEle: HTMLDivElement;
+  startPos: number = 0;
+  endPos: number = 0;
+  beforeEnter: number = 0;
+  ele: number = -1;
+  shiftKey: number = 0;
+  selStart: number = 0;
+  selEnd: number = 0;
+  // arrowUp: number = 0;
+  shiftStart: number = 0;
+  shiftFlag: number = 0;
+  mouseFlag: boolean = false;
+  matchedItem: string = '';
+  isActive: boolean = true;
+  curEnd: number = 0;
 
   get arrowButtonStyleObj () {
     return {
@@ -358,31 +385,36 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     }
   }
   mouseOverEvent (e: MouseEvent) {
+    this.isActive = true
     if (this.properties.Enabled && !this.properties.Locked) {
       const eTarget = e.target as HTMLDivElement
       for (let i = 0; i < eTarget.parentElement!.parentElement!.children.length; i++) {
-        if (eTarget.parentElement!.className === 'tr') {
+        if (eTarget.parentElement!.className === 'tr' || eTarget.parentElement!.className !== 'active') {
           const a = eTarget.parentElement!.parentElement!.children[i] as HTMLDivElement
           a.style.backgroundColor = ''
+          a.style.color = ''
         }
       }
       for (let i = 0; i < eTarget.parentElement!.parentElement!.parentElement!.children.length; i++) {
-        if (eTarget.parentElement!.parentElement!.className === 'tr') {
+        if (eTarget.parentElement!.parentElement!.className === 'tr' || eTarget.parentElement!.parentElement!.className !== 'active') {
           const a = eTarget.parentElement!.parentElement!.parentElement!.children[i] as HTMLDivElement
           a.style.backgroundColor = ''
+          a.style.color = '#000000'
         }
       }
       if (eTarget.parentElement!.children[0].className === 'tdClassIn') {
         const input = eTarget.parentElement!.children[0].children[0] as HTMLInputElement
         input.checked = true
-        if (eTarget.parentElement!.className === 'tr') {
-        eTarget.parentElement!.style.backgroundColor = 'rgb(59, 122, 231)'
+        if (eTarget.parentElement!.className === 'tr' || eTarget.parentElement!.className !== 'active') {
+        eTarget.parentElement!.style.backgroundColor = 'rgb(0, 120, 215)'
+        eTarget.parentElement!.style.color = '#FFFFFF'
         }
       } else if (eTarget.className === 'inputClass') {
         const anotherInput = eTarget as HTMLInputElement
         anotherInput.checked = true
       }
     }
+    this.mouseFlag = true
   }
 
   makeOpen () {
@@ -448,13 +480,13 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     }
   }
 
-  @Watch('properties.Text', { deep: true })
-  valueUpdateProp (newVal:string, oldVal:string) {
-    const propData: controlProperties = this.properties
-    if (this.properties.BoundColumn === this.properties.TextColumn) {
-      this.updateDataModel({ propertyName: 'Value', value: newVal })
-    }
-  }
+  // @Watch('properties.Text', { deep: true })
+  // valueUpdateProp (newVal:string, oldVal:string) {
+  //   const propData: controlProperties = this.properties
+  //   if (this.properties.BoundColumn === this.properties.TextColumn) {
+  //     this.updateDataModel({ propertyName: 'Value', value: newVal })
+  //   }
+  // }
 
   handleMultiSelect (e: MouseEvent) {
     if (e.target instanceof HTMLTableCellElement || e.target instanceof HTMLTableRowElement || e.target instanceof HTMLDivElement) {
@@ -557,7 +589,8 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     this.selectionData[0] = a.innerText
     for (let i = 0; i < this.extraDatas.RowSourceData!.length; i++) {
       const b = this.trRef[i].children[0] as HTMLDivElement
-      if (a.innerText === b.innerText) {
+      const aInnerText = a.innerText.split('\n')
+      if (aInnerText[0] === b.innerText) {
         if (this.properties.TextColumn === -1) {
           const text = this.extraDatas.RowSourceData![i][0]
           this.updateDataModel({ propertyName: 'Text', value: text })
@@ -1501,7 +1534,307 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     }
   }
 
-  handleTextInput (e: Event) {
+  matchFirst (e: KeyboardEvent) {
+    this.selStart = this.textareaRef.selectionStart
+    this.selEnd = this.textareaRef.selectionEnd
+    for (let i = 0; i < this.tempArray.length; i++) {
+      if (this.mouseFlag === false) {
+        const comboDiv = this.comboRef.children[1].children[i] as HTMLDivElement
+        this.clearBGandCheck(comboDiv)
+      }
+    }
+    for (let i = 0; i < this.tempArray.length; i++) {
+      if (this.tempArray[i][0][0] === this.textareaRef.value[0]) {
+        this.items.push(this.tempArray[i][0])
+      }
+      const comboDiv = this.comboRef.children[1].children[i] as HTMLDivElement
+      this.clearBGandCheck(comboDiv)
+    }
+    if (this.prev !== this.textareaRef.value[0]) {
+      this.count = 0
+    }
+    if (this.count >= this.items.length) {
+      this.count = 0
+    }
+    this.prev = this.textareaRef.value[0]
+    for (let i = 0; i < this.tempArray.length; i++) {
+      if (this.tempArray[i][0][0] === this.textareaRef.value[0]) {
+        this.count++
+        if (!this.tempArray[i][0].includes(this.textareaRef.value)) {
+          this.updateDataModel({
+            propertyName: 'Text',
+            value: this.textareaRef.value
+          })
+          this.startPos = this.endPos = this.textareaRef.selectionStart
+        }
+        if (this.tempArray[i][0].includes(this.textareaRef.value) && this.ele !== 0 && e.key !== 'ArrowUp') {
+          this.textareaRef.value = this.items[this.count - 1]
+          this.updateDataModel({
+            propertyName: 'Text',
+            value: this.items[this.count - 1]
+          })
+          this.startPos = 0
+          this.endPos = this.textareaRef.value.length
+        }
+        break
+      }
+    }
+    for (let j = 0; j < this.tempArray.length; j++) {
+      const comboDiv = this.comboRef.children[1].children[j] as HTMLDivElement
+      this.clearBGandCheck(comboDiv)
+      if (this.tempArray[j][0] === this.textareaRef.value) {
+        this.setBGandCheckedForMatch(comboDiv)
+      }
+    }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      this.startPos = 0
+      this.endPos = this.textareaRef.value.length
+    }
+    if (!e.shiftKey && e.key !== 'Shift') {
+      this.textareaRef.setSelectionRange(
+        this.startPos,
+        this.endPos,
+        'forward'
+      )
+    }
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.shiftKey) {
+      this.selection(this.selStart, this.selStart, 1)
+    }
+    if (e.key === 'ArrowUp' && !e.shiftKey && this.properties.Enabled) {
+      this.selection(this.textareaRef.value.length, this.textareaRef.value.length, 1)
+      for (let i = 0; i < this.tempArray.length; i++) {
+        if (this.textareaRef.value === '' || this.ele === 0) {
+          this.ele = 1
+        }
+        if (this.textareaRef.value === this.tempArray[i][0]) {
+          this.ele = i
+        }
+      }
+      if (this.ele <= this.tempArray.length) {
+        this.updateModel(this.tempArray[--this.ele][0])
+        const comboDiv = this.comboRef.children[1].children[this.ele] as HTMLDivElement
+        this.clearBGandCheck(comboDiv)
+        for (let j = 0; j < this.tempArray.length; j++) {
+          const com = this.comboRef.children[1].children[j] as HTMLDivElement
+          this.clearBGandCheck(com)
+        }
+        this.setBGandCheckedForMatch(comboDiv)
+      }
+    } else if (e.key === 'ArrowDown' && !e.shiftKey && this.properties.Enabled) {
+      for (let i = 0; i < this.tempArray.length; i++) {
+        if (this.textareaRef.value === '') {
+          this.ele = -1
+        }
+        if (this.textareaRef.value === this.tempArray[i][0]) {
+          this.ele = i
+        }
+      }
+      if (this.ele >= 0 && this.ele < this.tempArray.length - 1) {
+        this.updateModel(this.tempArray[++this.ele][0])
+        const comboDiv = this.comboRef.children[1].children[this.ele] as HTMLDivElement
+        this.clearBGandCheck(comboDiv)
+        for (let j = 0; j < this.tempArray.length; j++) {
+          const com = this.comboRef.children[1].children[j] as HTMLDivElement
+          this.clearBGandCheck(com)
+        }
+        this.setBGandCheckedForMatch(comboDiv)
+      }
+    }
+    this.items = []
+  }
+
+  setBGandCheckedForMatch (singleMatch: HTMLDivElement) {
+    if (singleMatch !== undefined) {
+      singleMatch.style.backgroundColor = 'rgb(0, 120, 215)'
+      singleMatch.style.color = '#FFF'
+      if ((this.properties.ListStyle === 1)) {
+        const tempNode = singleMatch.childNodes[0].childNodes[0] as HTMLInputElement
+        tempNode.checked = true
+      }
+    }
+  }
+
+  clearBGandCheck (singleMatch: HTMLDivElement) {
+    if (singleMatch !== undefined) {
+      singleMatch.style.backgroundColor = ''
+      singleMatch.style.color = ''
+      if ((this.properties.ListStyle === 1)) {
+        const tempNode = singleMatch.childNodes[0].childNodes[0] as HTMLInputElement
+        tempNode.checked = false
+      }
+    }
+  }
+
+  selection (start: number, end: number, direction: number) {
+    if (direction === 1) {
+      this.textareaRef.setSelectionRange(start, end, 'forward')
+    } else {
+      this.textareaRef.setSelectionRange(start, end, 'backward')
+    }
+  }
+
+  updateModel (val: string) {
+    this.updateDataModel({
+      propertyName: 'Text',
+      value: val
+    })
+  }
+
+  matchComplete (e: KeyboardEvent) {
+    // debugger
+    this.selStart = this.textareaRef.selectionStart
+    this.selEnd = this.textareaRef.selectionEnd
+    for (let i = 0; i < this.tempArray.length; i++) {
+      if (this.mouseFlag === false) {
+        const comboDiv = this.comboRef.children[1].children[i] as HTMLDivElement
+        this.clearBGandCheck(comboDiv)
+      }
+    }
+    for (let i = 0; i < this.tempArray.length; i++) {
+      const comboDiv = this.comboRef.children[1].children[i] as HTMLDivElement
+      this.clearBGandCheck(comboDiv)
+      let isCap = false
+      if (this.textareaRef.value[0] !== undefined) {
+        if (this.tempArray[i][0][0] === this.textareaRef.value[0].toLowerCase()) {
+          this.start = this.selStart
+          if (this.textareaRef.value[0].toUpperCase() === this.textareaRef.value[0]) {
+            isCap = true
+          }
+          if (!this.tempArray[i][0].includes(this.textareaRef.value)) {
+            this.updateModel(this.textareaRef.value)
+          }
+          if (this.tempArray[i][0].includes(this.textareaRef.value.toLowerCase()) && this.flag === 0) {
+            this.updateModel(this.tempArray[i][0])
+            this.textareaRef.value = this.tempArray[i][0]
+            for (let j = 0; j < this.tempArray.length; j++) {
+              const com = this.comboRef.children[1].children[j] as HTMLDivElement
+              this.clearBGandCheck(com)
+            }
+            this.matchedItem = this.tempArray[i][0]
+            this.setBGandCheckedForMatch(comboDiv)
+            this.comboEle = comboDiv
+            if ((!e.shiftKey && e.key !== 'ArrowLeft' &&
+            e.key !== 'ArrowRight' && e.key !== 'Shift') ||
+            (isCap === true)) {
+              this.selection(this.start, this.textareaRef.value.length, 1)
+            }
+            break
+          }
+        }
+      }
+    }
+    if (e.key === 'Backspace' && !e.shiftKey) {
+      if (this.curEnd === 1) {
+        this.prevLen = this.textareaRef.value.length
+      }
+      if (this.textareaRef.value.length === this.prevLen) {
+        this.start += 1
+      }
+      this.curEnd = 0
+      this.start -= 1
+      if (this.start === 0 && this.textareaRef.selectionEnd === this.textareaRef.value.length) {
+        this.updateModel('')
+        this.textareaRef.value = ''
+        this.clearBGandCheck(this.comboEle)
+        this.selection(this.selStart, this.selStart, 1)
+      }
+      if (this.selStart === this.selEnd &&
+       this.textareaRef.selectionStart !== this.textareaRef.value.length &&
+       this.textareaRef.selectionStart === this.textareaRef.selectionEnd) {
+        this.updateModel(this.textareaRef.value)
+        this.selection(this.selStart, this.selStart, 1)
+        this.clearBGandCheck(this.comboEle)
+        this.flag = 1
+      } else if (this.matchedItem !== this.textareaRef.value) {
+        this.selection(this.start, this.start, 1)
+      } else {
+        this.selection(this.start, this.textareaRef.value.length, 1)
+      }
+    } else if (e.key === 'Delete' && !e.shiftKey) {
+      if (this.textareaRef.selectionStart !== this.start &&
+      this.textareaRef.selectionStart !== this.textareaRef.selectionEnd) {
+        this.textareaRef.value = this.textareaRef.value.slice(0, this.start)
+        this.updateModel(this.textareaRef.value)
+        this.selection(this.selStart, this.selStart, 1)
+        this.clearBGandCheck(this.comboEle)
+      } else if (this.selStart === this.prevLen) {
+        this.textareaRef.value = this.textareaRef.value.slice(0, this.selStart) + this.textareaRef.value.slice(this.textareaRef.selectionEnd)
+        this.updateModel(this.textareaRef.value)
+        this.selection(this.selStart, this.selStart, 1)
+        this.clearBGandCheck(this.comboEle)
+      }
+    } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.shiftKey) {
+      this.selection(this.selStart, this.selStart, 1)
+    } else if (e.key === 'ArrowUp' && this.properties.Enabled) {
+      for (let i = 0; i < this.tempArray.length; i++) {
+        if (this.textareaRef.value === '' || this.textareaRef.value === this.tempArray[0][0]) {
+          this.ele = 1
+        }
+        if (this.textareaRef.value === this.tempArray[i][0]) {
+          this.ele = i
+        }
+      }
+      this.updateModel(this.tempArray[--this.ele][0])
+      const comboDiv = this.comboRef.children[1].children[this.ele] as HTMLDivElement
+      this.clearBGandCheck(comboDiv)
+      for (let j = 0; j < this.tempArray.length; j++) {
+        const com = this.comboRef.children[1].children[j] as HTMLDivElement
+        this.clearBGandCheck(com)
+      }
+      this.setBGandCheckedForMatch(comboDiv)
+      this.curEnd = 1
+    } else if (e.key === 'ArrowDown' && this.properties.Enabled) {
+      for (let i = 0; i < this.tempArray.length; i++) {
+        if (this.textareaRef.value === '') {
+          this.ele = -1
+        }
+        if (this.textareaRef.value === this.tempArray[i][0]) {
+          this.ele = i
+        }
+      }
+      if (this.ele < this.tempArray.length - 1) {
+        this.updateModel(this.tempArray[++this.ele][0])
+        const comboDiv = this.comboRef.children[1].children[this.ele] as HTMLDivElement
+        this.clearBGandCheck(comboDiv)
+        for (let j = 0; j < this.tempArray.length; j++) {
+          const com = this.comboRef.children[1].children[j] as HTMLDivElement
+          this.clearBGandCheck(com)
+        }
+        this.setBGandCheckedForMatch(comboDiv)
+        this.curEnd = 1
+      }
+    } else if (e.key === 'PageUp') {
+      this.updateModel(this.tempArray[0][0])
+      const comboDiv = this.comboRef.children[1].children[0] as HTMLDivElement
+      this.clearBGandCheck(comboDiv)
+      for (let j = 0; j < this.tempArray.length; j++) {
+        const com = this.comboRef.children[1].children[j] as HTMLDivElement
+        this.clearBGandCheck(com)
+      }
+      this.setBGandCheckedForMatch(comboDiv)
+      this.curEnd = 1
+    } else if (e.key === 'PageDown') {
+      this.updateModel(this.tempArray[this.tempArray.length - 1][0])
+      const comboDiv = this.comboRef.children[1].children[this.tempArray.length - 1] as HTMLDivElement
+      this.clearBGandCheck(comboDiv)
+      for (let j = 0; j < this.tempArray.length; j++) {
+        const com = this.comboRef.children[1].children[j] as HTMLDivElement
+        this.clearBGandCheck(com)
+      }
+      this.setBGandCheckedForMatch(comboDiv)
+      this.curEnd = 1
+    }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      this.start = this.beforeEnter
+    }
+    this.beforeEnter = this.start
+    this.prevLen = this.selStart
+    if (this.textareaRef.value === '') {
+      this.flag = 0
+    }
+  }
+
+  handleTextInput (e: KeyboardEvent) {
     const controlPropData = this.properties
     if (controlPropData.AutoTab && controlPropData.MaxLength! > 0) {
       if (e.target instanceof HTMLTextAreaElement) {
@@ -1510,9 +1843,11 @@ export default class FDComboBox extends Mixins(FdControlVue) {
         }
       }
     }
+    this.isActive = false
     if (this.properties.AutoSize) {
       this.updateAutoSize()
     }
+    this.mouseFlag = false
     if (e.target instanceof HTMLTextAreaElement) {
       const tempEvent = e.target
       this.eTargetValue = e.target.value
@@ -1526,21 +1861,10 @@ export default class FDComboBox extends Mixins(FdControlVue) {
           this.textareaRef.focus()
         }
         if (this.properties.MatchEntry === 0) {
-          for (let i = 0; i < this.tempArray.length; i++) {
-            if (this.tempArray[i][0][0] === this.textareaRef.value[0]) {
-              this.textareaRef.value = this.tempArray[i][0]
-              this.updateDataModel({
-                propertyName: 'Text',
-                value: this.tempArray[i][0]
-              })
-              break
-            }
-          }
-          this.textareaRef.setSelectionRange(
-            0,
-            this.textareaRef.value.length,
-            'forward'
-          )
+          this.matchFirst(e)
+        }
+        if (this.properties.MatchEntry === 1) {
+          this.matchComplete(e)
         }
       } else {
         this.tempArray = []
@@ -1618,27 +1942,33 @@ export default class FDComboBox extends Mixins(FdControlVue) {
       this.selectionStart = eventTarget.selectionStart
       this.selectionEnd = eventTarget.selectionEnd
     }
-    if (
-      !this.properties.HideSelection &&
-      textareaRef &&
-      event.target instanceof HTMLTextAreaElement
-    ) {
-      const eventTarget = event.target
+    // if (
+    //   !this.properties.HideSelection &&
+    //   textareaRef &&
+    //   event.target instanceof HTMLTextAreaElement
+    // ) {
+    //   const eventTarget = event.target
 
-      hideSelectionDiv.style.display = 'block'
-      hideSelectionDiv.style.height = this.properties.Height! + 'px'
-      hideSelectionDiv.style.width = this.properties.Width! + 'px'
-      textareaRef.style.display = 'none'
-      let textarea = eventTarget.value
-      let firstPart =
-        textarea.slice(0, eventTarget.selectionEnd) +
-        '</span>' +
-        textarea.slice(eventTarget.selectionEnd + Math.abs(0))
-      let text =
-        firstPart.slice(0, eventTarget.selectionStart) +
-        "<span style='background-color:lightblue'>" +
-        firstPart.slice(eventTarget.selectionStart + Math.abs(0))
-      hideSelectionDiv.innerHTML = text
+    //   hideSelectionDiv.style.display = 'block'
+    //   hideSelectionDiv.style.height = this.properties.Height! + 'px'
+    //   hideSelectionDiv.style.width = this.properties.Width! + 'px'
+    //   textareaRef.style.display = 'none'
+    //   let textarea = eventTarget.value
+    //   let firstPart =
+    //     textarea.slice(0, eventTarget.selectionEnd) +
+    //     '</span>' +
+    //     textarea.slice(eventTarget.selectionEnd + Math.abs(0))
+    //   let text =
+    //     firstPart.slice(0, eventTarget.selectionStart) +
+    //     "<span style='background-color:lightblue'>" +
+    //     firstPart.slice(eventTarget.selectionStart + Math.abs(0))
+    //   hideSelectionDiv.innerHTML = text
+    // }
+    const selection = window.getSelection()!
+    if (selection.rangeCount >= 1) {
+      for (var i = 0; i < selection.rangeCount; i++) {
+        selection.removeRange(selection.getRangeAt(i))
+      }
     }
     if (this.properties.MatchRequired && textareaRef) {
       const arrayCheck = this.extraDatas.RowSourceData!.findIndex(
@@ -1658,27 +1988,31 @@ export default class FDComboBox extends Mixins(FdControlVue) {
    * @param event its of FocusEvent
    * @event click
    */
-  handleClick (
-    event: TextEvent,
-    textareaRef: HTMLTextAreaElement,
-    hideSelectionDiv: HTMLDivElement
-  ) {
-    if (this.isOpenForStyleProp && this.properties.Style === 1) {
-      this.open = !this.open
-    }
-    if (!this.properties.HideSelection) {
-      hideSelectionDiv.style.display = 'none'
-    } else {
-      return undefined
-    }
-    if (this.properties.EnterFieldBehavior === 0) {
-      this.textareaRef.focus()
-      this.textareaRef.select()
-    } else if (this.properties.EnterFieldBehavior === 1) {
-    } else {
-      return undefined
-    }
-  }
+  // handleClick (
+  //   event: TextEvent,
+  //   textareaRef: HTMLTextAreaElement,
+  //   hideSelectionDiv: HTMLDivElement
+  // ) {
+  //   this.selStart = this.textareaRef.selectionStart
+  //   this.selEnd = this.textareaRef.selectionEnd
+  //   this.curEnd = 1
+  //   debugger
+  //   if (this.isOpenForStyleProp && this.properties.Style === 1) {
+  //     this.open = !this.open
+  //   }
+  //   if (!this.properties.HideSelection) {
+  //     hideSelectionDiv.style.display = 'none'
+  //   } else {
+  //     return undefined
+  //   }
+  //   if (this.properties.EnterFieldBehavior === 0) {
+  //     this.textareaRef.focus()
+  //     this.textareaRef.select()
+  //   } else if (this.properties.EnterFieldBehavior === 1) {
+  //   } else {
+  //     return undefined
+  //   }
+  // }
   /**
    * @description hides div instead of textarea when hideSelection is false
    * when hideSelection properties is true textarea is shown
@@ -1688,23 +2022,23 @@ export default class FDComboBox extends Mixins(FdControlVue) {
    * @event click
    */
   divHide (event: MouseEvent, textareaRef: HTMLTextAreaElement) {
-    if (
-      event.target instanceof HTMLSpanElement ||
-      event.target instanceof HTMLDivElement
-    ) {
-      event.target.style.display = 'none'
-      textareaRef.style.display = 'block'
-      if (
-        event.target.tagName === 'SPAN' &&
-        event.target.parentNode!.nodeName === 'DIV'
-      ) {
-        (event.target.parentNode as HTMLElement).style.display = 'none'
-      }
-      textareaRef.focus()
-      textareaRef.selectionStart = textareaRef.selectionEnd
-    } else {
-      throw new Error('event.target is not an instance of Span or Div Element')
-    }
+    // if (
+    //   event.target instanceof HTMLSpanElement ||
+    //   event.target instanceof HTMLDivElement
+    // ) {
+    //   event.target.style.display = 'none'
+    //   textareaRef.style.display = 'block'
+    //   if (
+    //     event.target.tagName === 'SPAN' &&
+    //     event.target.parentNode!.nodeName === 'DIV'
+    //   ) {
+    //     (event.target.parentNode as HTMLElement).style.display = 'none'
+    //   }
+    //   textareaRef.focus()
+    //   textareaRef.selectionStart = textareaRef.selectionEnd
+    // } else {
+    //   throw new Error('event.target is not an instance of Span or Div Element')
+    // }
   }
   /**
    * @description dragBehavior - if true when dragging
@@ -2070,6 +2404,10 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     }
   }
 
+  closeTextMenu () {
+    EventBus.$emit('closeMenu')
+  }
+
   protected get labelStyleObj (): Partial<CSSStyleDeclaration> {
     const controlProp = this.properties
     const font: font = controlProp.Font
@@ -2237,6 +2575,9 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     if (this.toolBoxSelectControl === 'Select') {
       event.stopPropagation()
     }
+    if (this.isEditMode) {
+      this.closeTextMenu()
+    }
   }
 }
 </script>
@@ -2284,7 +2625,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   border-right: 1px solid black;
 }
 .item:hover {
-  background-color: #0380fc;
+  background-color: rgb(59, 122, 231);
   color: white;
   border: 1px dotted black;
 }
@@ -2317,10 +2658,22 @@ export default class FDComboBox extends Mixins(FdControlVue) {
 }
 .tr {
   outline: none;
+  background-color: '';
+  color: '';
   display: inline-flex;
 }
-.tr:hover:not([disabled]) {
+/* .tr:hover:not([disabled]) {
   background-color: rgb(59, 122, 231);
+} */
+ .active {
+  outline: none;
+  background-color: '';
+  color: '';
+  display: inline-flex;
+}
+.active:hover{
+  background-color: rgb(59, 122, 231);
+  color:#FFF;
 }
 .ul {
   display: grid;
