@@ -42,13 +42,15 @@
           ref="listStyleRef"
           v-for="(item, index) of extraDatas.RowSourceData"
           :key="index"
-          @mouseenter.stop="handleDrag"
+          @mouseenter.stop="!isMoving && handleDrag($event)"
           @keydown.esc="releaseEditMode"
           @blur.stop="clearMatchEntry"
           @keydown.stop="handleExtendArrowKeySelect"
           @mousedown="
-            isRunMode || isEditMode ? handleMousedown($event) : '', captureTarget($event)"
-          @mouseup="handleMouseUp($event), captureTarget($event)"
+            isRunMode || (isEditMode && !isMoving) ? handleMousedown($event) : '',
+            isRunMode || (isEditMode && !isMoving) ? captureTarget($event) : ''"
+          @mouseup="
+            isRunMode || isEditMode ? handleSelected($event) : ''"
         >
           <div
             :style="tdStyleObj"

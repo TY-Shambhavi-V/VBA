@@ -61,6 +61,7 @@
         :isEditMode="isEditMode"
         :containerId="containerId"
         :getHighestZIndex="getControlZIndex"
+        :isMoving="isMoving"
         @setEditMode="setEditMode"
         @selectedItem="selectedItem"
         @deleteItem="deleteItem"

@@ -21,6 +21,7 @@ export default class FdControlVue extends Vue {
   @Prop({ required: true, type: Object as PropType<controlData> }) public data! : controlData
   @Prop({ required: true, type: String }) public controlId! : string
   @Prop({ default: false }) isActivated!: boolean
+  @Prop({ default: false }) isMoving!: boolean
 
   isContentEditable: boolean = false
   selectionData :Array<string> = [];
@@ -38,7 +39,6 @@ export default class FdControlVue extends Vue {
   last: number = 0;
   startNode!: HTMLDivElement;
   selectedItems: Array<number> = [];
-  lastItem: boolean = false
   isDropdownVisible: boolean = true;
   isItalic: boolean = false;
   tempWeight: string = '400';
@@ -751,6 +751,17 @@ export default class FdControlVue extends Vue {
       this.updateDataModel({ propertyName: 'Value', value: newVal })
     }
   }
+ @Watch('properties.ListStyle', { deep: true })
+ clearSelectedArray () {
+   debugger
+   this.selectedItems = []
+ }
+
+ @Watch('properties.MultiSelect', { deep: true })
+ clearSelection () {
+   debugger
+   this.selectedItems = []
+ }
 
  /**
   * @description watches text and value properties are same when component is mounted/changed
@@ -1432,35 +1443,6 @@ selectChildren (e: KeyboardEvent) {
   }
 }
 
-captureTarget (e: any) {
-  const eveTarget = e.target as HTMLDivElement
-  this.startNode = eveTarget
-  const tempPath = e.composedPath()
-  const tNode = eveTarget.parentElement as HTMLDivElement
-  let key = 0
-  if (eveTarget.tagName === 'tr') {
-    key = eveTarget.tabIndex
-  } else {
-    key = tNode.tabIndex
-  }
-  if (eveTarget.style.backgroundColor === 'rgb(59, 122, 231)') {
-    if (!this.selectedItems.includes(key)) {
-      this.selectedItems.push(key)
-    }
-  } else if (this.selectedItems.includes(key)) {
-    const index = this.selectedItems.indexOf(key)
-    this.selectedItems.splice(index, 1)
-  }
-  this.lastItem = true
-  this.selectedItems.forEach((ele, index) => {
-    if (index !== this.selectedItems.length - 1) {
-      this.selectOnHover(ele, ele, tempPath)
-      this.selectChildren(e)
-    }
-  })
-  console.log(this.selectedItems)
-}
-
 /**
 * @description updates the dataModel listBox object properties when mouseenter
 * @function handleDrag
@@ -1513,18 +1495,12 @@ handleDrag (e: any) {
     }
   } else if (this.properties.MultiSelect === 1) {
     if (e.which === 1) {
-      debugger
       if (etarget.className === 'tr') {
         startPoint = endPoint = etarget.tabIndex
       } else {
         startPoint = endPoint = tNode.tabIndex
       }
-      if (this.lastItem) {
-        this.selectedItems.pop()
-        this.lastItem = false
-      }
       this.clearOptionBGColorAndChecked(e)
-      // this.selectOnHover(startPoint, endPoint, tempPath)
       this.selectedItems.forEach((ele, index) => {
         this.selectOnHover(ele, ele, tempPath)
         this.selectChildren(e)
@@ -1535,20 +1511,18 @@ handleDrag (e: any) {
         this.setOptionBGColorAndChecked(e)
         this.selectChildren(e)
       }
-      // this.selectedItems.forEach((ele, index) => {
-      //   if (index !== this.selectedItems.length - 1) {
-      //     this.selectOnHover(ele, ele, tempPath)
-      //     this.selectChildren(e)
-      //   }
-      // })
     }
   }
   window.getSelection()!.removeAllRanges()
 }
 
-handleSelected (e: any) {
+captureTarget (e: any) {
   const eveTarget = e.target as HTMLDivElement
   this.startNode = eveTarget
+}
+
+handleSelected (e: any) {
+  const eveTarget = e.target as HTMLDivElement
   const tempPath = e.composedPath()
   const tNode = eveTarget.parentElement as HTMLDivElement
   let key = 0
@@ -1557,28 +1531,22 @@ handleSelected (e: any) {
   } else {
     key = tNode.tabIndex
   }
-  if (eveTarget.style.backgroundColor === 'rgb(59, 122, 231)') {
-    if (!this.selectedItems.includes(key)) {
-      this.selectedItems.push(key)
+  if (this.properties.MultiSelect === 1) {
+    if (eveTarget.style.backgroundColor === 'rgb(59, 122, 231)') {
+      if (!this.selectedItems.includes(key)) {
+        this.selectedItems.push(key)
+      }
+    } else if (this.selectedItems.includes(key)) {
+      const index = this.selectedItems.indexOf(key)
+      this.selectedItems.splice(index, 1)
     }
-  } else if (this.selectedItems.includes(key)) {
-    const index = this.selectedItems.indexOf(key)
-    this.selectedItems.splice(index, 1)
+    this.selectedItems.forEach((ele, index) => {
+      if (index !== this.selectedItems.length - 1) {
+        this.selectOnHover(ele, ele, tempPath)
+        this.selectChildren(e)
+      }
+    })
   }
-  this.selectedItems.forEach((ele, index) => {
-    if (index !== this.selectedItems.length - 1) {
-      this.selectOnHover(ele, ele, tempPath)
-      this.selectChildren(e)
-    }
-  })
-  console.log(this.selectedItems)
-}
-
-handleMouseUp (e: any) {
-  const etarget = e.target as HTMLDivElement
-  const tempPath = e.composedPath()
-  let startPoint = 0
-  let endPoint = 0
 }
 
 selectOnHover (startPoint: number, endPoint: number, tempPath: any) {
