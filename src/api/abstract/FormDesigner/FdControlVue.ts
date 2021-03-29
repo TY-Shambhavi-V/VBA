@@ -38,6 +38,7 @@ export default class FdControlVue extends Vue {
   last: number = 0;
   startNode!: HTMLDivElement;
   selectedItems: Array<number> = [];
+  lastItem: boolean = false
   isDropdownVisible: boolean = true;
   isItalic: boolean = false;
   tempWeight: string = '400';
@@ -1431,7 +1432,7 @@ selectChildren (e: KeyboardEvent) {
   }
 }
 
-captureTarget (e: MouseEvent) {
+captureTarget (e: any) {
   const eveTarget = e.target as HTMLDivElement
   this.startNode = eveTarget
   const tempPath = e.composedPath()
@@ -1450,6 +1451,14 @@ captureTarget (e: MouseEvent) {
     const index = this.selectedItems.indexOf(key)
     this.selectedItems.splice(index, 1)
   }
+  this.lastItem = true
+  this.selectedItems.forEach((ele, index) => {
+    if (index !== this.selectedItems.length - 1) {
+      this.selectOnHover(ele, ele, tempPath)
+      this.selectChildren(e)
+    }
+  })
+  console.log(this.selectedItems)
 }
 
 /**
@@ -1504,36 +1513,65 @@ handleDrag (e: any) {
     }
   } else if (this.properties.MultiSelect === 1) {
     if (e.which === 1) {
+      debugger
       if (etarget.className === 'tr') {
         startPoint = endPoint = etarget.tabIndex
       } else {
         startPoint = endPoint = tNode.tabIndex
       }
+      if (this.lastItem) {
+        this.selectedItems.pop()
+        this.lastItem = false
+      }
       this.clearOptionBGColorAndChecked(e)
-      this.selectOnHover(startPoint, endPoint, tempPath)
+      // this.selectOnHover(startPoint, endPoint, tempPath)
       this.selectedItems.forEach((ele, index) => {
-        if (index !== this.selectedItems.length - 1) {
-          this.selectOnHover(ele, ele, tempPath)
-        }
+        this.selectOnHover(ele, ele, tempPath)
+        this.selectChildren(e)
       })
-      this.selectChildren(e)
+      if (etarget.style.backgroundColor === 'rgb(59, 122, 231)' || tNode.style.backgroundColor === 'rgb(59, 122, 231') {
+        this.unselectBGColorAndchecked(e)
+      } else {
+        this.setOptionBGColorAndChecked(e)
+        this.selectChildren(e)
+      }
+      // this.selectedItems.forEach((ele, index) => {
+      //   if (index !== this.selectedItems.length - 1) {
+      //     this.selectOnHover(ele, ele, tempPath)
+      //     this.selectChildren(e)
+      //   }
+      // })
     }
   }
   window.getSelection()!.removeAllRanges()
 }
 
-handleMouseLeave (e: any) {
-  const etarget = e.target as HTMLDivElement
+handleSelected (e: any) {
+  const eveTarget = e.target as HTMLDivElement
+  this.startNode = eveTarget
   const tempPath = e.composedPath()
-  let startPoint = 0
-  let endPoint = 0
-  const tNode = etarget.parentElement as HTMLDivElement
+  const tNode = eveTarget.parentElement as HTMLDivElement
+  let key = 0
+  if (eveTarget.tagName === 'tr') {
+    key = eveTarget.tabIndex
+  } else {
+    key = tNode.tabIndex
+  }
+  if (eveTarget.style.backgroundColor === 'rgb(59, 122, 231)') {
+    if (!this.selectedItems.includes(key)) {
+      this.selectedItems.push(key)
+    }
+  } else if (this.selectedItems.includes(key)) {
+    const index = this.selectedItems.indexOf(key)
+    this.selectedItems.splice(index, 1)
+  }
   this.selectedItems.forEach((ele, index) => {
-    if (ele !== tNode.tabIndex || ele !== etarget.tabIndex) {
+    if (index !== this.selectedItems.length - 1) {
       this.selectOnHover(ele, ele, tempPath)
+      this.selectChildren(e)
     }
   })
-  console.log('mouse leave')
+  console.log(this.selectedItems)
 }
 
 handleMouseUp (e: any) {
@@ -1743,7 +1781,7 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
 unselectBGColorAndchecked (e: KeyboardEvent | MouseEvent) {
   const currentTargetElement = e.currentTarget as HTMLDivElement
   const childNodeChecked = currentTargetElement.children[0].childNodes[0] as HTMLInputElement
-  if (this.properties.MultiSelect === 2) {
+  if (this.properties.MultiSelect === 2 || this.properties.MultiSelect === 1) {
     childNodeChecked.checked = false
     currentTargetElement.style.backgroundColor = ''
     currentTargetElement.style.color = 'black'

@@ -48,8 +48,7 @@
           @keydown.stop="handleExtendArrowKeySelect"
           @mousedown="
             isRunMode || isEditMode ? handleMousedown($event) : '', captureTarget($event)"
-          @mouseup="handleMouseUp($event)"
-          @mouseleave="handleMouseLeave($event)"
+          @mouseup="handleMouseUp($event), captureTarget($event)"
         >
           <div
             :style="tdStyleObj"
