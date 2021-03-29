@@ -50,7 +50,7 @@ export function checkPropertyValue (propertyName: keyof controlProperties, value
     case 'ScrollWidth' :
     case 'ScrollTop' :
     case 'ScrollLeft' :
-      result = value >= 0 && value.toString().length < 9
+      result = value >= 0 && parseInt(value).toString().length < 9
       break
   }
   return result

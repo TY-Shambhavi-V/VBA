@@ -278,7 +278,7 @@ interface IupdateDataModelExtraData {
 interface IDragResizeGroup{
   event: MouseEvent
   handler: string
-  controlId: string
+  control: string
 }
 interface ITabOrderDialogInitialStyle {
   left: string;

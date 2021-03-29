@@ -66,13 +66,13 @@
             class="left-button"
             :style="scrollButtonStyle"
             @mouseover="updateMouseCursor"
-            @click="leftmove"
+            @click="isEditMode&&leftmove()"
           ></button>
           <button
             class="right-button"
             :style="scrollButtonStyle"
             @mouseover="updateMouseCursor"
-            @click="rightmove"
+            @click="isEditMode&&rightmove()"
           ></button>
         </div>
       </div>
@@ -99,22 +99,21 @@ import { EventBus } from '@/FormDesigner/event-bus'
 })
 export default class FDTabStrip extends FdControlVue {
   @State((state) => state.fd.userformData) userformData!: userformData;
-  @Prop() isEditMode: boolean;
+  @Prop() isEditMode!: boolean
   @Prop({ required: true, type: String }) public userFormId!: string;
-  @Ref('tabstripContextMenu') tabstripContextMenu: HTMLDivElement;
-  @Ref('scrolling') scrolling: HTMLDivElement;
-  @Ref('controlTabsRef') controlTabsRef: HTMLDivElement[];
-  @Ref('buttonStyleRef') buttonStyleRef: HTMLDivElement;
-  $el: HTMLDivElement;
+  @Ref('tabstripContextMenu') tabstripContextMenu!: HTMLDivElement;
+  @Ref('scrolling') scrolling!: HTMLDivElement;
+  @Ref('controlTabsRef') controlTabsRef!: HTMLDivElement[];
+  @Ref('buttonStyleRef') buttonStyleRef!: HTMLDivElement;
+  $el!: HTMLDivElement;
 
-  // isScroll = true;
   scrollButtonHeight: number = 0
   scrollButtonWidth: number = 0
   viewMenu: boolean = false;
   top: string = '0px';
   left: string = '0px';
   contextMenuValue: Array<IcontextMenu> = tabsContextMenu;
-  tempScrollWidth: number;
+  tempScrollWidth!: number;
   updatedValue: number = 0;
   tempWidth: number = 0;
   tempHeight: number = 0;
@@ -125,6 +124,8 @@ export default class FDTabStrip extends FdControlVue {
   rowsCount: string = '';
   setPosition: string = 'initial';
   isMoveGetterCalled: boolean = false;
+  lastChangedInRightMove: boolean = false;
+  tabsIndex: number = 0;
   rightClickSelect (value: number) {
     this.updateDataModel({ propertyName: 'Value', value: value })
   }
@@ -150,40 +151,59 @@ export default class FDTabStrip extends FdControlVue {
    *
    */
   leftmove () {
-    const scrollRef = this.scrolling
-    if (
-      this.properties.TabOrientation === 0 ||
-      this.properties.TabOrientation === 1
-    ) {
-      scrollRef.scrollLeft! -= 50
-      if (this.scrolling) {
-        const rightButton = this.buttonStyleRef.children[1] as HTMLButtonElement
-        const leftButton = this.buttonStyleRef.children[0] as HTMLButtonElement
-        if (this.scrolling.scrollLeft >= (this.scrolling.scrollWidth - this.scrolling.clientWidth)) {
-          rightButton.style.opacity = '0.4'
-          leftButton.style.opacity = '1'
-        } else if (this.scrolling.scrollLeft === 0) {
-          leftButton.style.opacity = '0.4'
-          rightButton.style.opacity = '1'
-        } else {
-          leftButton.style.opacity = '1'
-          rightButton.style.opacity = '1'
-        }
+    if (this.scrolling && this.scrolling.children) {
+      const scrollRef = this.scrolling
+      if (this.tabsIndex > 0 && this.tabsIndex < this.scrolling.children.length && !this.lastChangedInRightMove) {
+        this.tabsIndex = this.tabsIndex - 1
       }
-    } else {
-      scrollRef.scrollTop! -= 50
-      if (this.scrolling) {
-        const rightButton = this.buttonStyleRef.children[1] as HTMLButtonElement
-        const leftButton = this.buttonStyleRef.children[0] as HTMLButtonElement
-        if (this.scrolling.scrollTop >= (this.scrolling.scrollHeight - this.scrolling.clientHeight)) {
-          rightButton.style.opacity = '0.4'
-          leftButton.style.opacity = '1'
-        } else if (this.scrolling.scrollTop === 0) {
-          leftButton.style.opacity = '0.4'
-          rightButton.style.opacity = '1'
-        } else {
-          leftButton.style.opacity = '1'
-          rightButton.style.opacity = '1'
+      this.lastChangedInRightMove = false
+
+      if (
+        this.properties.TabOrientation === 0 ||
+      this.properties.TabOrientation === 1
+      ) {
+        scrollRef.style.width = (this.properties.Width! - 42) + 'px'
+        let sum = 0
+        for (let i = 0; i < this.tabsIndex; i++) {
+          const element = scrollRef.children[i] as HTMLDivElement
+          sum += element.offsetWidth
+        }
+        scrollRef.scrollLeft = sum
+        if (this.scrolling) {
+          const rightButton = this.buttonStyleRef.children[1] as HTMLButtonElement
+          const leftButton = this.buttonStyleRef.children[0] as HTMLButtonElement
+          if (this.scrolling.scrollLeft >= (this.scrolling.scrollWidth - this.scrolling.clientWidth)) {
+            rightButton.style.opacity = '0.4'
+            leftButton.style.opacity = '1'
+          } else if (this.scrolling.scrollLeft === 0) {
+            leftButton.style.opacity = '0.4'
+            rightButton.style.opacity = '1'
+          } else {
+            leftButton.style.opacity = '1'
+            rightButton.style.opacity = '1'
+          }
+        }
+      } else {
+        scrollRef.style.height = (this.properties.Height! - 48) + 'px'
+        let sum = 0
+        for (let i = 0; i < this.tabsIndex; i++) {
+          const element = scrollRef.children[i] as HTMLDivElement
+          sum += element.offsetHeight
+        }
+        scrollRef.scrollTop = sum
+        if (this.scrolling) {
+          const rightButton = this.buttonStyleRef.children[1] as HTMLButtonElement
+          const leftButton = this.buttonStyleRef.children[0] as HTMLButtonElement
+          if (this.scrolling.scrollTop >= (this.scrolling.scrollHeight - this.scrolling.clientHeight)) {
+            rightButton.style.opacity = '0.4'
+            leftButton.style.opacity = '1'
+          } else if (this.scrolling.scrollTop === 0) {
+            leftButton.style.opacity = '0.4'
+            rightButton.style.opacity = '1'
+          } else {
+            leftButton.style.opacity = '1'
+            rightButton.style.opacity = '1'
+          }
         }
       }
     }
@@ -195,42 +215,78 @@ export default class FDTabStrip extends FdControlVue {
    *
    */
   rightmove () {
-    const scrollRef = this.scrolling
-    let tempScrollTop = scrollRef.scrollTop!
-    if (
-      this.properties.TabOrientation === 0 ||
-      this.properties.TabOrientation === 1
-    ) {
-      scrollRef.scrollLeft! += 50
-      if (this.scrolling) {
-        const rightButton = this.buttonStyleRef.children[1] as HTMLButtonElement
-        const leftButton = this.buttonStyleRef.children[0] as HTMLButtonElement
-        if (this.scrolling.scrollLeft >= (this.scrolling.scrollWidth - this.scrolling.clientWidth - 1)) {
-          rightButton.style.opacity = '0.4'
-          leftButton.style.opacity = '1'
-        } else if (this.scrolling.scrollLeft === 0) {
-          leftButton.style.opacity = '0.4'
-          rightButton.style.opacity = '1'
-        } else {
-          leftButton.style.opacity = '1'
-          rightButton.style.opacity = '1'
-        }
+    if (this.scrolling && this.scrolling.children) {
+      const scrollRef = this.scrolling
+      if (this.tabsIndex >= 0 && this.tabsIndex < this.scrolling.children.length) {
+        this.tabsIndex = this.tabsIndex + 1
       }
-    } else {
-      tempScrollTop += 50
-      scrollRef.scrollTop = tempScrollTop
-      if (this.scrolling) {
-        const rightButton = this.buttonStyleRef.children[1] as HTMLButtonElement
-        const leftButton = this.buttonStyleRef.children[0] as HTMLButtonElement
-        if (this.scrolling.scrollTop >= (this.scrolling.scrollHeight - this.scrolling.clientHeight - 1)) {
-          rightButton.style.opacity = '0.4'
-          leftButton.style.opacity = '1'
-        } else if (this.scrolling.scrollTop === 0) {
-          leftButton.style.opacity = '0.4'
-          rightButton.style.opacity = '1'
-        } else {
-          leftButton.style.opacity = '1'
-          rightButton.style.opacity = '1'
+      let tempScrollTop = scrollRef.scrollTop!
+      if (
+        this.properties.TabOrientation === 0 ||
+      this.properties.TabOrientation === 1
+      ) {
+        let sum = 0
+        for (let i = 0; i < this.tabsIndex; i++) {
+          const element = scrollRef.children[i] as HTMLDivElement
+          sum += element.offsetWidth
+        }
+        if ((scrollRef.scrollWidth - scrollRef.clientWidth - 2) <= scrollRef.scrollLeft && scrollRef.scrollLeft < sum) {
+          scrollRef.style.width = (scrollRef.clientWidth - (sum - scrollRef.scrollLeft)) + 'px'
+        }
+        scrollRef.scrollLeft = sum
+        if (this.scrolling) {
+          const rightButton = this.buttonStyleRef.children[1] as HTMLButtonElement
+          const leftButton = this.buttonStyleRef.children[0] as HTMLButtonElement
+          if (this.scrolling.scrollLeft >= (this.scrolling.scrollWidth - this.scrolling.clientWidth - 3)) {
+            rightButton.style.opacity = '0.4'
+            leftButton.style.opacity = '1'
+            this.tabsIndex = this.tabsIndex - 1
+            this.lastChangedInRightMove = true
+            if (rightButton.style.opacity === '0.4') {
+              if ((scrollRef.scrollWidth - scrollRef.clientWidth - 2) <= scrollRef.scrollLeft && scrollRef.scrollLeft < sum) {
+                scrollRef.style.width = (scrollRef.clientWidth - (sum - scrollRef.scrollLeft)) + 'px'
+              }
+              scrollRef.scrollLeft = sum
+            }
+          } else if (this.scrolling.scrollLeft === 0) {
+            leftButton.style.opacity = '0.4'
+            rightButton.style.opacity = '1'
+          } else {
+            leftButton.style.opacity = '1'
+            rightButton.style.opacity = '1'
+          }
+        }
+      } else {
+        let sum = 0
+        for (let i = 0; i < this.tabsIndex; i++) {
+          const element = scrollRef.children[i] as HTMLDivElement
+          sum += element.offsetHeight
+        }
+        if ((scrollRef.scrollHeight - scrollRef.clientHeight - 2) <= scrollRef.scrollTop && scrollRef.scrollTop < sum) {
+          scrollRef.style.height = (scrollRef.clientHeight - (sum - scrollRef.scrollTop)) + 'px'
+        }
+        scrollRef.scrollTop = sum
+        if (this.scrolling) {
+          const rightButton = this.buttonStyleRef.children[1] as HTMLButtonElement
+          const leftButton = this.buttonStyleRef.children[0] as HTMLButtonElement
+          if (this.scrolling.scrollTop >= (this.scrolling.scrollHeight - this.scrolling.clientHeight - 1)) {
+            rightButton.style.opacity = '0.4'
+            leftButton.style.opacity = '1'
+            this.tabsIndex = this.tabsIndex - 1
+            this.lastChangedInRightMove = true
+            if (rightButton.style.opacity === '0.4') {
+              if ((scrollRef.scrollHeight - scrollRef.clientHeight - 2) <= scrollRef.scrollTop && scrollRef.scrollTop < sum) {
+                scrollRef.style.height = (scrollRef.clientHeight - (sum - scrollRef.scrollTop)) + 'px'
+              }
+              scrollRef.scrollTop = sum
+            }
+          } else if (this.scrolling.scrollTop === 0) {
+            leftButton.style.opacity = '0.4'
+            rightButton.style.opacity = '1'
+          } else {
+            leftButton.style.opacity = '1'
+            rightButton.style.opacity = '1'
+          }
         }
       }
     }
@@ -305,14 +361,6 @@ export default class FDTabStrip extends FdControlVue {
     } else if (controlProp.TabOrientation === 0) {
       bottomTopStyle = { [a[1]]: '0px' }
     }
-    this.setScrollLeft()
-    if (this.scrolling) {
-      Vue.nextTick(() => {
-        if (this.properties.MultiRow) {
-          this.scrolling.scrollLeft = 0
-        }
-      })
-    }
     return {
       ...bottomTopStyle,
       position: this.setPosition,
@@ -336,7 +384,7 @@ export default class FDTabStrip extends FdControlVue {
         controlProp.TabOrientation === 2 || controlProp.TabOrientation === 3
           ? 'fit-content'
           : this.isScrollVisible
-            ? `${controlProp.Width! - 45}px`
+            ? `${controlProp.Width! - 42}px`
             : `${controlProp.Width!}px`,
       float: controlProp.TabOrientation === 3 ? 'right' : '',
       overflow: 'hidden',
@@ -489,7 +537,7 @@ export default class FDTabStrip extends FdControlVue {
         this.properties.TabOrientation === 0 ||
         this.properties.TabOrientation === 1
       ) {
-        if (this.scrolling && !this.properties.MultiRow) {
+        if (this.scrolling && this.scrolling.children && !this.properties.MultiRow) {
           for (let i = 0; i < this.scrolling.children.length; i++) {
             const a = this.scrolling.children[i] as HTMLDivElement
             sum += a.offsetWidth
@@ -502,7 +550,7 @@ export default class FDTabStrip extends FdControlVue {
           }
         }
       } else {
-        if (this.scrolling && !this.properties.MultiRow) {
+        if (this.scrolling && this.scrolling.children && !this.properties.MultiRow) {
           for (let i = 0; i < this.scrolling.children.length; i++) {
             const a = this.scrolling.children[i] as HTMLDivElement
             sum += a.offsetHeight
@@ -515,7 +563,6 @@ export default class FDTabStrip extends FdControlVue {
           }
         }
       }
-      this.setScrollLeft()
       this.scrollDisabledValidate()
       this.updateMultiRowforLeftAndRight()
     })
@@ -559,6 +606,9 @@ export default class FDTabStrip extends FdControlVue {
         this.topValue = this.scrolling.offsetHeight!
         this.widthValue = this.scrolling.clientWidth
         this.updateTabsWidth()
+        if (this.isScrollVisible) {
+          this.updateTabsWidthForValue()
+        }
       })
     }
   }
@@ -580,6 +630,9 @@ export default class FDTabStrip extends FdControlVue {
         this.topValue = this.scrolling.offsetHeight!
         this.widthValue = this.scrolling.clientWidth
         this.updateTabsWidth()
+        if (this.isScrollVisible) {
+          this.updateTabsWidthForValue()
+        }
       })
     }
   }
@@ -1029,12 +1082,8 @@ export default class FDTabStrip extends FdControlVue {
               a.style.paddingLeft = '5px'
               a.style.paddingRight = '5px'
             }
-            debugger
             if (move.offsetHeight > (moveChild.offsetHeight + 5)) {
-              console.log('move.offseHeight', move.offsetHeight)
-              console.log('moveChild.offsetHeight', moveChild.offsetHeight)
               let numberOfRows = this.properties.Value !== 0 ? Math.ceil(move.offsetHeight / (moveChild.offsetHeight + 5)) : Math.ceil(move.offsetHeight / moveChild.offsetHeight)
-              console.log('nOfRows', numberOfRows)
               let tabIndexValue = 0
               let currentTabsWidth = 0
               let rowWidth = 0
@@ -1048,7 +1097,6 @@ export default class FDTabStrip extends FdControlVue {
                   }
                   if (currentTabsWidth > this.properties.Width!) {
                     rowWidth = currentTabsWidth - (childElement.clientWidth + parseInt(a.style.paddingLeft) + parseInt(a.style.paddingRight) + 10)
-                    console.log('currentTabsWidth', currentTabsWidth)
                     if (rowWidth !== 0) {
                       for (let k = tabIndexValue; k < j; k++) {
                         if (k === (j - 1)) {
@@ -1121,6 +1169,7 @@ export default class FDTabStrip extends FdControlVue {
         this.widthValue = this.scrolling.clientWidth
       })
     }
+    this.tabsIndex = 0
   }
 
   @Watch('properties.MultiRow')
@@ -1178,7 +1227,6 @@ export default class FDTabStrip extends FdControlVue {
    */
   @Watch('selectedTabData.Caption')
   captionValue (newVal: string, oldVal: string) {
-    this.setScrollLeft()
     if (newVal === '') {
       this.tempWidth = 30
     }
@@ -1193,21 +1241,20 @@ export default class FDTabStrip extends FdControlVue {
         this.updateTabsWidth()
       })
     }
+    if (this.properties.TabOrientation === 0 || this.properties.TabOrientation === 1) {
+      if (this.scrolling) {
+        if (this.scrolling.scrollWidth > this.scrolling.clientWidth) {
+          this.scrolling.style.width = (this.properties.Width! - 42) + 'px'
+        } else {
+          this.scrolling.style.width = (this.properties.Width!) + 'px'
+        }
+        this.updateTabsWidthForValue()
+      }
+    }
   }
 
   get selectedTabData () {
     return this.extraDatas!.Tabs![this.updatedValue]
-  }
-
-  setScrollLeft () {
-    if (this.scrolling) {
-      let totalSiblingWidth = 0
-      for (let i = 0; i < this.properties.Value!; i++) {
-        const a = this.scrolling.children[i] as HTMLDivElement
-        totalSiblingWidth += a.clientWidth
-      }
-      this.scrolling.scrollLeft = totalSiblingWidth
-    }
   }
 
   calculateWidthHeight () {
@@ -1315,6 +1362,150 @@ export default class FDTabStrip extends FdControlVue {
     }
   }
 
+  @Watch('extraDatas.Tabs.length')
+  tabsLength (newVal: number, oldVal: number) {
+    Vue.nextTick(() => {
+      if (this.scrolling) {
+        const scrollRef = this.scrolling
+        let sum = 0
+        if (this.properties.TabOrientation === 0 || this.properties.TabOrientation === 1) {
+          if (this.scrolling.scrollWidth > this.scrolling.clientWidth) {
+            if (newVal > oldVal) {
+              if (!this.isScrollVisible) {
+                this.isScrollVisible = true
+              }
+              Vue.nextTick(() => {
+                if (this.scrolling) {
+                  if (this.scrolling.scrollWidth > this.scrolling.clientWidth) {
+                    this.scrolling.style.width = (this.properties.Width! - 42) + 'px'
+                  } else {
+                    this.scrolling.style.width = (this.properties.Width!) + 'px'
+                  }
+                  if (this.isScrollVisible) {
+                    this.scrolling.scrollLeft = this.scrolling.scrollWidth
+                  } else {
+                    this.scrolling.scrollLeft = 0
+                  }
+                  for (let index = 0; index < scrollRef.children.length; index++) {
+                    const singleTab = scrollRef.children[index] as HTMLDivElement
+                    sum += singleTab.offsetWidth
+                    if (sum > scrollRef.scrollLeft) {
+                      this.tabsIndex = index
+                      break
+                    }
+                  }
+                  this.rightmove()
+                  if (this.isScrollVisible) {
+                    this.scrolling.scrollLeft = this.scrolling.scrollWidth
+                  } else {
+                    this.scrolling.scrollLeft = 0
+                    this.scrolling.style.width = (this.properties.Width!) + 'px'
+                  }
+                }
+              })
+            } else {
+              Vue.nextTick(() => {
+                if (this.scrolling) {
+                  if (this.scrolling.scrollWidth > this.scrolling.clientWidth) {
+                    this.scrolling.style.width = (this.properties.Width! - 42) + 'px'
+                  } else {
+                    this.scrolling.style.width = (this.properties.Width!) + 'px'
+                  }
+                  if (this.isScrollVisible) {
+                    this.scrolling.scrollLeft = this.scrolling.scrollWidth
+                  } else {
+                    this.scrolling.scrollLeft = 0
+                  }
+                  for (let index = 0; index < scrollRef.children.length; index++) {
+                    const singleTab = scrollRef.children[index] as HTMLDivElement
+                    sum += singleTab.offsetWidth
+                    if (sum > scrollRef.scrollLeft) {
+                      this.tabsIndex = index
+                      break
+                    }
+                  }
+                  this.rightmove()
+                  if (this.isScrollVisible) {
+                    this.scrolling.scrollLeft = this.scrolling.scrollWidth
+                  } else {
+                    this.scrolling.scrollLeft = 0
+                    this.scrolling.style.width = (this.properties.Width!) + 'px'
+                  }
+                }
+              })
+            }
+          }
+        } else {
+          if (this.scrolling.scrollHeight > this.scrolling.clientHeight) {
+            if (newVal > oldVal) {
+              if (!this.isScrollVisible) {
+                this.isScrollVisible = true
+              }
+              Vue.nextTick(() => {
+                if (this.scrolling) {
+                  if (this.scrolling.scrollHeight > this.scrolling.clientHeight) {
+                    this.scrolling.style.height = (this.properties.Height! - 48) + 'px'
+                  } else {
+                    this.scrolling.style.height = (this.properties.Height!) + 'px'
+                  }
+                  if (this.isScrollVisible) {
+                    this.scrolling.scrollTop = this.scrolling.scrollHeight
+                  } else {
+                    this.scrolling.scrollTop = 0
+                  }
+                  for (let index = 0; index < scrollRef.children.length; index++) {
+                    const singleTab = scrollRef.children[index] as HTMLDivElement
+                    sum += singleTab.offsetHeight
+                    if (sum > scrollRef.scrollTop) {
+                      this.tabsIndex = index
+                      break
+                    }
+                  }
+                  this.rightmove()
+                  if (this.isScrollVisible) {
+                    this.scrolling.scrollTop = this.scrolling.scrollHeight
+                  } else {
+                    this.scrolling.scrollTop = 0
+                    this.scrolling.style.height = (this.properties.Height!) + 'px'
+                  }
+                }
+              })
+            } else {
+              Vue.nextTick(() => {
+                if (this.scrolling) {
+                  if (this.scrolling.scrollHeight > this.scrolling.clientHeight) {
+                    this.scrolling.style.height = (this.properties.Height! - 48) + 'px'
+                  } else {
+                    this.scrolling.style.height = (this.properties.Height!) + 'px'
+                  }
+                  if (this.isScrollVisible) {
+                    this.scrolling.scrollTop = this.scrolling.scrollHeight
+                  } else {
+                    this.scrolling.scrollTop = 0
+                  }
+                  for (let index = 0; index < scrollRef.children.length; index++) {
+                    const singleTab = scrollRef.children[index] as HTMLDivElement
+                    sum += singleTab.offsetHeight
+                    if (sum > scrollRef.scrollTop) {
+                      this.tabsIndex = index
+                      break
+                    }
+                  }
+                  this.rightmove()
+                  if (this.isScrollVisible) {
+                    this.scrolling.scrollTop = this.scrolling.scrollHeight
+                  } else {
+                    this.scrolling.scrollTop = 0
+                    this.scrolling.style.height = (this.properties.Height!) + 'px'
+                  }
+                }
+              })
+            }
+          }
+        }
+      }
+    })
+  }
   @Watch('properties.Value')
   valueValidate () {
     this.focusPage()
@@ -1328,62 +1519,150 @@ export default class FDTabStrip extends FdControlVue {
       })
     }
     Vue.nextTick(() => {
-      if (this.properties.TabOrientation === 0 || this.properties.TabOrientation === 1) {
-        for (let i = 0; i < this.properties.Value!; i++) {
-          sum += this.controlTabsRef[i].clientWidth
-        }
-        if (this.properties.Width! - this.scrolling.offsetWidth > sum) {
-          this.scrolling.scrollLeft = sum
+      this.updateTabsWidthForValue()
+      this.focusPage()
+    })
+  }
+  updateTabsWidthForValue () {
+    Vue.nextTick(() => {
+      if (this.isScrollVisible && this.scrolling && this.scrolling.children) {
+        if (this.properties.TabOrientation === 0 || this.properties.TabOrientation === 1) {
+          let lastVisibleTab = 0
+          let sum = 0
+          let newSum = 0
+          let verifySum = 0
+          for (let i = 0; i < this.scrolling.children.length; i++) {
+            const child = this.scrolling.children[i] as HTMLDivElement
+            sum = sum + child.offsetWidth
+            if (sum > Math.ceil(this.scrolling.scrollLeft)) {
+              this.tabsIndex = i
+              let tempSum = 0
+              const scrollRef = this.scrolling
+              for (let i = 0; i < this.tabsIndex; i++) {
+                const element = scrollRef.children[i] as HTMLDivElement
+                tempSum += element.offsetWidth
+              }
+              if ((scrollRef.scrollWidth - scrollRef.clientWidth - 2) <= scrollRef.scrollLeft && scrollRef.scrollLeft < tempSum) {
+                scrollRef.style.width = (scrollRef.clientWidth - (tempSum - scrollRef.scrollLeft)) + 'px'
+              }
+              scrollRef.scrollLeft = tempSum
+              break
+            }
+          }
+          if (this.scrolling.scrollWidth > this.scrolling.clientWidth) {
+            this.scrolling.style.width = (this.properties.Width! - 42) + 'px'
+          } else {
+            this.scrolling.style.width = (this.properties.Width!) + 'px'
+          }
+          if ((this.properties.Value! as number) === (this.scrolling.children.length - 1)) {
+            const a = this.scrolling.children[this.scrolling.children.length - 1] as HTMLDivElement
+            if (a) {
+              let finalTabSum = 0
+              if (a.offsetWidth > this.properties.Width! - 42) {
+                for (let m = 0; m < this.scrolling.children.length - 1; m++) {
+                  const child = this.scrolling.children[m] as HTMLDivElement
+                  finalTabSum += child.offsetWidth
+                }
+                this.scrolling.scrollLeft = finalTabSum
+              } else {
+                this.rightmove()
+                this.rightmove()
+              }
+            }
+          } else if ((this.properties.Value! as number) === 0) {
+            this.scrolling.scrollLeft = 0
+          } else {
+            let singleValueSum = 0
+            const valueWidth = this.scrolling.children[this.properties.Value! as number] as HTMLDivElement
+            if (valueWidth.offsetWidth >= (this.properties.Width! - 42)) {
+              for (let m = 0; m < (this.properties.Value as number); m++) {
+                const child = this.scrolling.children[m] as HTMLDivElement
+                this.tabsIndex = this.properties.Value as number
+                singleValueSum += child.offsetWidth
+              }
+              this.scrolling.scrollLeft = singleValueSum
+            } else {
+              for (let x = this.tabsIndex; x < this.scrolling.children.length; x++) {
+                newSum = 0
+                for (let j = this.tabsIndex; j < ((this.properties.Value! as number) + 1); j++) {
+                  const child = this.scrolling.children[j] as HTMLDivElement
+                  newSum = newSum + child.offsetWidth
+                  if (newSum > (this.properties.Width! - 42)) {
+                    lastVisibleTab = j - 1
+                    this.rightmove()
+                  }
+                }
+              }
+            }
+          }
         } else {
-          const valueAsNumber = this.properties.Value! as number
-          if (sum > this.controlTabsRef[valueAsNumber].clientWidth) {
-            const sL = sum - this.controlTabsRef[valueAsNumber].clientWidth
-            this.scrolling.scrollLeft = sL
-          } else {
-            this.scrolling.scrollLeft = sum
+          let lastVisibleTab = 0
+          let sum = 0
+          let newSum = 0
+          let verifySum = 0
+          for (let i = 0; i < this.scrolling.children.length; i++) {
+            const child = this.scrolling.children[i] as HTMLDivElement
+            sum = sum + child.offsetHeight
+            if (sum > Math.ceil(this.scrolling.scrollTop)) {
+              this.tabsIndex = i
+              let tempSum = 0
+              const scrollRef = this.scrolling
+              for (let i = 0; i < this.tabsIndex; i++) {
+                const element = scrollRef.children[i] as HTMLDivElement
+                tempSum += element.offsetHeight
+              }
+              if ((scrollRef.scrollHeight - scrollRef.clientHeight - 2) <= scrollRef.scrollTop && scrollRef.scrollTop < tempSum) {
+                scrollRef.style.height = (scrollRef.clientHeight - (tempSum - scrollRef.scrollTop)) + 'px'
+              }
+              scrollRef.scrollTop = tempSum
+              break
+            }
           }
-        }
-        if (this.scrolling) {
-          const rightButton = this.buttonStyleRef.children[1] as HTMLButtonElement
-          const leftButton = this.buttonStyleRef.children[0] as HTMLButtonElement
-          if (this.scrolling.scrollLeft >= (this.scrolling.scrollWidth - this.scrolling.clientWidth - 30)) {
-            rightButton.style.opacity = '0.4'
-            leftButton.style.opacity = '1'
-          } else if (this.scrolling.scrollLeft === 0) {
-            leftButton.style.opacity = '0.4'
-            rightButton.style.opacity = '1'
+          if (this.scrolling.scrollHeight > this.scrolling.clientHeight) {
+            this.scrolling.style.height = (this.properties.Height! - 48) + 'px'
           } else {
-            leftButton.style.opacity = '1'
-            rightButton.style.opacity = '1'
+            this.scrolling.style.height = (this.properties.Height!) + 'px'
           }
-        }
-      } else {
-        for (let i = 0; i < this.properties.Value!; i++) {
-          sum += this.controlTabsRef[i].clientHeight
-        }
-        if (this.properties.Height! - this.scrolling.offsetHeight > sum) {
-          this.scrolling.scrollTop = sum
-        } else {
-          const valueAsNumber = this.properties.Value! as number
-          if (sum > this.controlTabsRef[valueAsNumber].clientHeight) {
-            const sL = sum - this.controlTabsRef[valueAsNumber].clientHeight
-            this.scrolling.scrollTop = sL
+          if ((this.properties.Value! as number) === (this.scrolling.children.length - 1)) {
+            const a = this.scrolling.children[this.scrolling.children.length - 1] as HTMLDivElement
+            if (a) {
+              let finalTabSum = 0
+              if (a.offsetHeight > this.properties.Height! - 42) {
+                for (let m = 0; m < this.scrolling.children.length - 1; m++) {
+                  const child = this.scrolling.children[m] as HTMLDivElement
+                  finalTabSum += child.offsetHeight
+                }
+                this.scrolling.scrollTop = finalTabSum
+              } else {
+                this.rightmove()
+                this.rightmove()
+              }
+            }
+          } else if ((this.properties.Value! as number) === 0) {
+            this.scrolling.scrollTop = 0
           } else {
-            this.scrolling.scrollTop = sum
-          }
-        }
-        if (this.scrolling) {
-          const rightButton = this.buttonStyleRef.children[1] as HTMLButtonElement
-          const leftButton = this.buttonStyleRef.children[0] as HTMLButtonElement
-          if (this.scrolling.scrollTop >= (this.scrolling.scrollHeight - this.scrolling.clientHeight)) {
-            rightButton.style.opacity = '0.4'
-            leftButton.style.opacity = '1'
-          } else if (this.scrolling.scrollTop === 0) {
-            leftButton.style.opacity = '0.4'
-            rightButton.style.opacity = '1'
-          } else {
-            leftButton.style.opacity = '1'
-            rightButton.style.opacity = '1'
+            let singleValueSum = 0
+            const valueHeight = this.scrolling.children[this.properties.Value! as number] as HTMLDivElement
+            if (valueHeight.offsetHeight >= (this.properties.Height! - 48)) {
+              for (let m = 0; m < (this.properties.Value as number); m++) {
+                const child = this.scrolling.children[m] as HTMLDivElement
+                this.tabsIndex = this.properties.Value as number
+                singleValueSum += child.offsetHeight
+              }
+              this.scrolling.scrollTop = singleValueSum
+            } else {
+              for (let x = this.tabsIndex; x < this.scrolling.children.length; x++) {
+                newSum = 0
+                for (let j = this.tabsIndex; j < ((this.properties.Value! as number) + 1); j++) {
+                  const child = this.scrolling.children[j] as HTMLDivElement
+                  newSum = newSum + child.offsetHeight
+                  if (newSum > (this.properties.Height! - 48)) {
+                    lastVisibleTab = j - 1
+                    this.rightmove()
+                  }
+                }
+              }
+            }
           }
         }
       }

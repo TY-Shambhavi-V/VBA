@@ -102,8 +102,8 @@ interface ISelectedValue {
   name: 'FDColorPalettes'
 })
 export default class FDColorPalettes extends Vue {
-  @Prop() value: string;
-  @Prop() name: string;
+  @Prop() value!: string;
+  @Prop() name!: string;
   @Ref('colorPalleteRef') readonly colorPalleteRef!: HTMLDivElement;
   @Ref('divContainer') readonly divContainer!: HTMLDivElement;
 
@@ -112,7 +112,7 @@ export default class FDColorPalettes extends Vue {
   left: number = 0
   colors: Array<IColors> = colors;
   colorSystem: Array<ISelectedValue> = colorSystem;
-  selectedValue: ISelectedValue
+  selectedValue!: ISelectedValue
 
   openColorPalette (event: MouseEvent) {
     this.top = event.y

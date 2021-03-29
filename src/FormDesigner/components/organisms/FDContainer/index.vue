@@ -85,15 +85,22 @@ import DragSelector from '@/FormDesigner/components/organisms/FDDragSelector/Dra
 export default class Container extends FDCommonMethod {
   $el!: HTMLDivElement;
   currentSelectedGroup: string = '';
-  @Prop() getScrollBarX: string
-  @Prop() getScrollBarY: string
-  isControlPasted: boolean = false
-
+  @Prop() getScrollBarX!: string
+  @Prop() getScrollBarY!: string
+  @Prop() isEditMode!: boolean
+  @Prop() width!: number
+  @Prop() height!: number
   @Prop({ required: true, type: String }) public controlId!: string;
   @Prop({ required: true, type: String }) userFormId!: string;
   @Prop({ required: true, type: String }) containerId!: string;
-  @Prop() mouseCursorData: string;
-  @Prop() getSampleDotPattern: { backgroundImage: string; backgroundSize: string; backgroundPosition: string }
+  @Prop() mouseCursorData!: string;
+  @Prop() getSampleDotPattern!: { backgroundImage: string; backgroundSize: string; backgroundPosition: string }
+  @Prop() createBackgroundString!: string
+  @Prop() getSizeMode!: string
+  @Prop() getRepeatData!: string
+  @Prop() getPosition!: string
+  @Prop() dragSelctorWidthHeight!: Partial<CSSStyleDeclaration>
+  @Prop() frameTop!: number
   @State((state: rootState) => state.fd.toolBoxSelect) toolBoxSelect!: fdState['toolBoxSelect'];
   @State((state) => state.fd.selectedControls)
   selectedControls!: fdState['selectedControls'];
@@ -112,32 +119,22 @@ export default class Container extends FDCommonMethod {
   ) => void;
   @Action('fd/selectControl') selectControl!: (payload: IselectControl) => void;
 
-  @Prop() isEditMode: boolean;
-  @Prop() width: number
-  @Prop() height: number
-
   @Ref('groupRef') readonly groupRef!: GroupControl;
   @Ref('refContextMenu') readonly refContextMenu!: ContextMenu;
-  @Ref('dragSelector') readonly dragSelector: dragselector;
-  @Ref('contextmenu') readonly contextmenu: HTMLDivElement;
-  @Ref('parentDivRef') parentDivRef: HTMLDivElement
-  @Ref('verticalScrollRef') verticalScrollRef: HTMLDivElement
-  @Ref('horizontalScrollRef') horizontalScrollRef: HTMLDivElement
-  @Ref('pictureDivRef') pictureDivRef: HTMLDivElement
-  @Ref('childDivRef') childDivRef: HTMLDivElement
+  @Ref('dragSelector') readonly dragSelector!: dragselector;
+  @Ref('contextmenu') readonly contextmenu!: HTMLDivElement;
+  @Ref('parentDivRef') parentDivRef!: HTMLDivElement
+  @Ref('verticalScrollRef') verticalScrollRef!: HTMLDivElement
+  @Ref('horizontalScrollRef') horizontalScrollRef!: HTMLDivElement
+  @Ref('pictureDivRef') pictureDivRef!: HTMLDivElement
+  @Ref('childDivRef') childDivRef!: HTMLDivElement
 
-  @Prop() createBackgroundString: string
-  @Prop() getSizeMode: string
-  @Prop() getRepeatData: string
-  @Prop() getPosition: string
-  @Prop() dragSelctorWidthHeight: Partial<CSSStyleDeclaration>
-  @Prop() frameTop: number
-
+  isControlPasted: boolean = false
   controlContextMenu: Array<IcontextMenu> = controlContextMenu;
   userformContextMenu: Array<IcontextMenu> = userformContextMenu;
   handler: string = '';
   grouphandler: string = '';
-  mainSelectData: controlData
+  mainSelectData!: controlData
   containerPosition: IMousePosition = { clientX: 0, clientY: 0, movementX: 0, movementY: 0 }
   selectedGroup: string[] = []
   groupStyleArray: Array<IGroupStyle> = [];
@@ -366,8 +363,7 @@ export default class Container extends FDCommonMethod {
             }
           )
         }
-        const isPageSelected = !(userData[this.containerId].type === 'Page' && this.getSelectedControlsDatas!.includes(this.getContainerList(this.containerId)[0]))
-        if (userData[mainSelect].type !== 'Userform' && mainSelect && !this.getSelectedControlsDatas!.includes(this.containerId) && isPageSelected && !this.mouseUpOnPageTab) {
+        if (userData[mainSelect].type !== 'Userform' && mainSelect && !this.getSelectedControlsDatas!.includes(this.containerId) && !this.mouseUpOnPageTab) {
           count = count + 1
           let frameCondition: boolean = false
           if (this.handler === 'frameDrag') {
@@ -448,6 +444,10 @@ export default class Container extends FDCommonMethod {
               document.onmouseup(event)
             }
           }
+        } else if (this.mouseUpOnPageTab) {
+          event.stopPropagation()
+          document.onmouseup(event)
+          this.mouseUpOnPageTab = false
         }
       } else {
         event.stopPropagation()
@@ -479,10 +479,30 @@ export default class Container extends FDCommonMethod {
     }
   }
   muldragControl (val: IDragResizeGroup) {
-    this.groupRef.handleMouseDown(val.event, val.handler)
+    this.groupRef.handleMouseDown(val.event, val.handler, '', val.control)
   }
   dragControl (event: MouseEvent) {
-    this.groupRef.handleMouseDown(event, 'drag')
+    this.groupRef.handleMouseDown(event, 'drag', '', '')
+  }
+  get getScrollBoarProp () {
+    const controlProp = this.propControlData.properties
+    if (controlProp.KeepScrollBarsVisible === 0 || controlProp.ScrollBars === 0) {
+      return 'hide'
+    } else if (controlProp.KeepScrollBarsVisible === 1 && (controlProp.ScrollBars === 1 || controlProp.ScrollBars === 3)) {
+      return 'horizontal'
+    } else if (controlProp.KeepScrollBarsVisible === 2 && (controlProp.ScrollBars === 2 || controlProp.ScrollBars === 3)) {
+      return 'vertical'
+    } else if (controlProp.KeepScrollBarsVisible === 3 && controlProp.ScrollBars === 3) {
+      return 'show'
+    } else if ((controlProp.KeepScrollBarsVisible === 1 || controlProp.KeepScrollBarsVisible === 3) && controlProp.ScrollBars === 1) {
+      return 'horizontal'
+    } else if ((controlProp.KeepScrollBarsVisible === 2 || controlProp.KeepScrollBarsVisible === 3) && controlProp.ScrollBars === 2) {
+      return 'vertical'
+    } else if (controlProp.KeepScrollBarsVisible === 0 && controlProp.ScrollBars === 3) {
+      return 'hide'
+    } else {
+      return ''
+    }
   }
   /**
    * @description style object to dynamically changing the styles of  the darg-selctor component based on propControlData
@@ -493,19 +513,19 @@ export default class Container extends FDCommonMethod {
     const controlProp = this.propControlData.properties
     const type = this.propControlData.type
     if (type === 'Userform') {
-      if (controlProp.ScrollBars === 3) {
+      if (this.getScrollBoarProp === 'show') {
         return 47
       }
       return 32
     } else if (type === 'Frame') {
-      if (controlProp.ScrollBars === 3) {
+      if (this.getScrollBoarProp === 'show') {
         return this.frameTop ? (-this.frameTop + 22) : 22
-      } else if (controlProp.ScrollBars === 2) {
-        return this.frameTop ? (-this.frameTop) + 22 : 7
+      } else if (this.getScrollBoarProp === 'vertical') {
+        return this.frameTop ? (-this.frameTop) + 8 : 7
       }
       return this.frameTop ? (-this.frameTop) + 4 : 0
     } else if (type === 'Page') {
-      if (controlProp.ScrollBars === 3) {
+      if (this.getScrollBoarProp === 'show') {
         return 15
       }
       return 0
@@ -515,19 +535,23 @@ export default class Container extends FDCommonMethod {
     const controlProp = this.propControlData.properties
     const type = this.propControlData.type
     if (type === 'Userform') {
-      if (controlProp.ScrollBars === 3) {
-        return 17
-      } else if (controlProp.ScrollBars === 1) {
+      if (this.getScrollBoarProp === 'show') {
+        return 19
+      } else if (this.getScrollBoarProp === 'horizontal') {
         return 3
+      } else {
+        if (controlProp.BorderStyle === 1 || controlProp.SpecialEffect! > 0) {
+          return 2
+        }
       }
     } else if (type === 'Frame') {
-      if (controlProp.ScrollBars === 3) {
+      if (this.getScrollBoarProp === 'show') {
         return 20
       } else {
         return 4
       }
     } else if (type === 'Page') {
-      if (controlProp.ScrollBars === 3) {
+      if (this.getScrollBoarProp === 'show') {
         return 15
       }
     }
@@ -705,19 +729,7 @@ export default class Container extends FDCommonMethod {
     let addWidth = ''
     const controlProp = this.propControlData.properties
     const type = this.propControlData.type
-    if (this.propControlData.properties.ScrollBars === 1) {
-      if ((type === 'Userform' || type === 'Frame') && (controlProp.BorderStyle === 1 || controlProp.SpecialEffect! > 0)) {
-        addWidth = 'calc(100% + 16px)'
-      } else {
-        addWidth = 'calc(100% + 18px)'
-      }
-    } else {
-      if ((type === 'Userform' || type === 'Frame') && (controlProp.BorderStyle === 1 || controlProp.SpecialEffect! > 0)) {
-        addWidth = 'calc(100%)'
-      } else {
-        addWidth = 'calc(100% + 2px)'
-      }
-    }
+    addWidth = 'calc(100%)'
     return {
       zIndex: 1000,
       width: addWidth,
@@ -725,14 +737,14 @@ export default class Container extends FDCommonMethod {
       position: 'absolute',
       background: '#F5F5F5',
       overflowX: this.getScrollBarX,
-      display: this.getScrollBarX === 'scroll' ? 'block' : 'none',
-      bottom: '0px'
-      // top: this.calContainerHeight + 'px'
+      visibility: this.getScrollBarX === 'scroll' ? 'visible' : 'hidden',
+      bottom: '0px',
+      overflowY: this.getScrollBoarProp === 'horizontal' ? 'hidden' : ''
     }
   }
   get verticalScrollBarStyle () {
     let addHeight = ''
-    if (this.propControlData.properties.ScrollBars === 2) {
+    if (this.getScrollBoarProp === 'vertical') {
       addHeight = 'calc(100%)'
     } else {
       addHeight = 'calc(100% - 15px)'

@@ -59,10 +59,10 @@ export default class FDToggleButton extends Mixins(FdControlVue) {
   isClicked: boolean = true;
   isFocus: boolean = false;
   clickCount: number = 0;
-  @Ref('componentRef') componentRef: HTMLSpanElement
+  @Ref('componentRef') componentRef!: HTMLSpanElement
   @Ref('textSpanRef') textSpanRef!: HTMLSpanElement
-  @Ref('imageRef') imageRef: HTMLImageElement
-  @Ref('logoRef') logoRef : HTMLSpanElement
+  @Ref('imageRef') imageRef!: HTMLImageElement
+  @Ref('logoRef') logoRef! : HTMLSpanElement
   @Ref('editableTextRef') editableTextRef!: FDEditableText
   /**
    * @description getDisableValue checks for the RunMode of the control and then returns after checking for the Enabled

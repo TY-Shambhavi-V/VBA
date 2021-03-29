@@ -53,9 +53,9 @@ export default class FDCommandButton extends Mixins(FdControlVue) {
   isClicked: boolean = false;
   isContentEditable: boolean = false;
   @Ref('textSpanRef') textSpanRef!: HTMLDivElement
-  @Ref('imageRef') imageRef: HTMLImageElement
-  @Ref('logoRef') logoRef : HTMLDivElement
-  @Ref('componentRef') componentRef: HTMLDivElement
+  @Ref('imageRef') imageRef!: HTMLImageElement
+  @Ref('logoRef') logoRef!: HTMLDivElement
+  @Ref('componentRef') componentRef!: HTMLDivElement
   @Ref('editableTextRef') editableTextRef!: FDEditableText
   /**
    * @description getDisableValue checks for the RunMode of the control and then returns after checking for the Enabled

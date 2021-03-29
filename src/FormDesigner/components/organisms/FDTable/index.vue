@@ -53,8 +53,8 @@ export default class FDTable extends Vue {
   @State((state) => state.fd.userformData) userformData!: userformData;
   @Prop({ required: true, type: String }) public readonly userFormId! : string
   @Prop({ required: true }) public readonly getSelectedControlsDatas: any
-  @Prop() resultArray: boolean[]
-  @Prop({ required: false }) public readonly isPropChanged: boolean
+  @Prop() resultArray!: boolean[]
+  @Prop({ required: false }) public readonly isPropChanged!: boolean
   @Action('fd/updateControl') updateControl!: (payload: IupdateControl) => void;
   @Action('fd/updateControlExtraData') updateControlExtraData!: (
     payload: IupdateControlExtraData
@@ -66,7 +66,7 @@ export default class FDTable extends Vue {
 
   scrollTopDifference = [[47, 32], [22, 7], [15, 0]]
   scrollLeftDifference = [[17, 3], [20, 4], [15, 0]]
-  eventObjectToAssignPreviousValue: Event
+  eventObjectToAssignPreviousValue!: Event
   pageHeightWidth = {
     Width: 0,
     Height: 0

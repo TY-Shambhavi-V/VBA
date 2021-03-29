@@ -2,7 +2,8 @@
   <div id="popup1" class="overlay" :style="tabOrderStyleObj"
   tabindex="0"
   @keydown.enter="updateControlData"
-  @keydown.esc="closeDialog()">
+  @keydown.esc="closeDialog()"
+  @focus="focusSelectedControl">
     <div class="outer-taborder-div popup" :style="tabOrderDialogInitialStyle">
       <div class="taborder-header-div" @mousedown.stop="dragTabOrderDialog">
         <div class="taborder-header-innerdiv">
@@ -20,11 +21,14 @@
         <div class="wrapper1">
           <span class="inner-header">Page Order</span>
           <div class="frame">
-            <div v-for="(value, index) in tabOrderList" :key="value.Name">
+            <div v-for="(value, index) in tabOrderList" :key="value.Name" ref="tabOrderFrameRef"
+              :class="{ 'active-item': currentIndex.includes(index) }"
+              @keydown="selectedItem(index, $event), selectOnShiftAndCtrl(index, $event)">
               <button
                 class="inside-frame"
-                :class="{ 'active-item': currentIndex === index }"
-                @click="selectedTab(index)"
+                  :class="{ 'active-item': currentIndex.includes(index) }"
+                  @mousedown="selectedTab(index), selectOnShiftAndCtrl(index,$event)"
+                  @mouseenter="onDrag(index, $event)"
               >
                 {{ value.Caption }}
               </button>
@@ -57,7 +61,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Emit, Prop, Vue } from 'vue-property-decorator'
+import { Component, Emit, Prop, Vue, Ref } from 'vue-property-decorator'
 import { EventBus } from '@/FormDesigner/event-bus'
 import { State, Action } from 'vuex-class'
 import { IupdateControlExtraData, IupdateControl } from '@/storeModules/fd/actions'
@@ -72,11 +76,12 @@ export default class TabStripTabOrderModal extends FdDialogDragVue {
   @Action('fd/updateControlExtraData') updateControlExtraData!: (
     payload: IupdateControlExtraData
   ) => void;
+  @Ref('tabOrderFrameRef') tabOrderFrameRef: HTMLDivElement[];
 
   isTabOrderOpen: boolean = false;
   userFormId: string = '';
   controlId: string = '';
-  currentIndex: number = -1;
+  currentIndex: number[] = [];
   tabOrderList: tabsItems[] = [];
   selectedTabData: tabsItems = {
     Name: '',
@@ -84,6 +89,9 @@ export default class TabStripTabOrderModal extends FdDialogDragVue {
     ToolTip: '',
     Accelerator: ''
   }
+  isDrag:boolean = true
+  indexes:number[]
+  previous: number[] = []
 
   updateControlData () {
     this.updateControlExtraData({
@@ -106,6 +114,8 @@ export default class TabStripTabOrderModal extends FdDialogDragVue {
     this.closeDialog()
   }
   closeDialog () {
+    this.currentIndex = []
+    this.previous = []
     this.selectedTabData = {
       Name: '',
       Caption: '',
@@ -119,6 +129,11 @@ export default class TabStripTabOrderModal extends FdDialogDragVue {
   getFocusElement (val: boolean) {
     return { val: val, dialogType: 'tabstripTabOrder' }
   }
+  focusSelectedControl () {
+    if (this.tabOrderFrameRef[0].children[0] && this.tabOrderFrameRef[0].children[0] instanceof HTMLButtonElement) {
+      this.tabOrderFrameRef[0].children[0].focus()
+    }
+  }
 
   created () {
     EventBus.$on(
@@ -131,7 +146,8 @@ export default class TabStripTabOrderModal extends FdDialogDragVue {
 
         if (tabOrderControlData.length > 0) {
           this.tabOrderList = JSON.parse(JSON.stringify(tabOrderControlData))
-          this.currentIndex = 0
+          this.currentIndex = [0]
+          this.previous = []
         } else {
           console.error('Empty Tab data')
         }

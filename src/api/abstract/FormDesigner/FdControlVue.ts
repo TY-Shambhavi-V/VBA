@@ -20,23 +20,24 @@ export default class FdControlVue extends Vue {
   @State((state: rootState) => state.fd.toolBoxSelect) toolBoxSelect!: fdState['toolBoxSelect']
   @Prop({ required: true, type: Object as PropType<controlData> }) public data! : controlData
   @Prop({ required: true, type: String }) public controlId! : string
-  @Prop({ default: false }) isActivated: boolean
-  @Prop({ default: -1 }) getHighestZIndex: number
+  @Prop({ default: false }) isActivated!: boolean
 
   isContentEditable: boolean = false
   selectionData :Array<string> = [];
   matchEntry: Array<number> = [];
   matchIndex = -1;
-  prevNode: HTMLDivElement;
+  prevNode!: HTMLDivElement;
   arrowMove: number = 0;
   afterArrow: number = 0;
   arrowUp: boolean = false;
   first: number = 0;
-  prevEle: HTMLDivElement;
-  lastDrag: HTMLDivElement;
+  prevEle!: HTMLDivElement;
+  lastDrag!: HTMLDivElement;
   isDrag: boolean = false;
   start: number = 0;
   last: number = 0;
+  startNode!: HTMLDivElement;
+  selectedItems: Array<number> = [];
   isDropdownVisible: boolean = true;
   isItalic: boolean = false;
   tempWeight: string = '400';
@@ -1126,6 +1127,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
             this.setBGandCheckedForMatch(
               tempChildNode
             )
+            this.selectChildren(e)
             break
           } else if (prevMatchData !== this.extraDatas.MatchData) {
             this.matchIndex = 0
@@ -1133,6 +1135,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
             this.setBGandCheckedForMatch(
               tempChildNode
             )
+            this.selectChildren(e)
             break
           } else {
             if (this.matchEntry.length === 0) {
@@ -1143,6 +1146,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
             this.setBGandCheckedForMatch(
               tempChildNode
             )
+            this.selectChildren(e)
             break
           }
         }
@@ -1187,6 +1191,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
           let singleMatch = tbody.childNodes[this.matchEntry[0]] as HTMLDivElement
           this.clearOptionBGColorAndChecked(e)
           this.setBGandCheckedForMatch(singleMatch)
+          this.selectChildren(e)
           break
         } else if (
         this.extraDatas.MatchData!.length > 1 &&
@@ -1195,6 +1200,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
           let completeAutoMatch = tbody.childNodes[this.matchEntry[0]] as HTMLDivElement
           this.clearOptionBGColorAndChecked(e)
           this.setBGandCheckedForMatch(completeAutoMatch)
+          this.selectChildren(e)
         }
         break
       }
@@ -1211,9 +1217,11 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
               this.clearOptionBGColorAndChecked(e)
               const ele = element.childNodes[--index] as HTMLDivElement
               this.setBGandCheckedForMatch(ele)
+              this.selectChildren(e)
               this.prevNode = ele
             } else if (index === 0) {
               this.setBGandCheckedForMatch(ei)
+              this.selectChildren(e)
               this.prevNode = ei
             }
           }
@@ -1238,6 +1246,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
               }
               const ele = element.childNodes[++index] as HTMLDivElement
               this.setBGandCheckedForMatch(ele)
+              this.selectChildren(e)
               this.prevNode = ele
               break
             }
@@ -1245,6 +1254,7 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
           this.prevNode.focus()
           this.first = 0
           this.arrowMove = 1
+          this.afterArrow = 1
           break
         }
       }
@@ -1264,19 +1274,21 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     if (this.properties.MultiSelect === 2 && eventTarget.nextSibling !== null) {
       if (eventTarget.style.backgroundColor !== 'rgb(59, 122, 231)') {
         this.setOptionBGColorAndChecked(e)
+        this.selectChildren(e)
       } else if (
         eventTarget.style.backgroundColor === 'rgb(59, 122, 231)' &&
         currentElement!.style.backgroundColor !== ''
       ) {
-        this.setOptionBGColorAndChecked(e)
         this.unselectBGColorAndchecked(e)
       } else if (eventTarget.nextSibling!.nextSibling !== null) {
         this.setBGColorForNextSibling(e)
+        this.selectChildren(e)
       } else if (
       eventTarget.nextSibling!.nextSibling === null &&
       currentElement!.style.backgroundColor !== 'rgb(59, 122, 231)'
       ) {
         this.setBGColorForNextSibling(e)
+        this.selectChildren(e)
       }
       this.arrowMove = 0
       this.afterArrow = 1
@@ -1300,17 +1312,19 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
         eventTarget.style.backgroundColor === 'rgb(59, 122, 231)' &&
         currentElement.style.backgroundColor !== ''
       ) {
-        this.setOptionBGColorAndChecked(e)
         this.unselectBGColorAndchecked(e)
       } else if (eventTarget.previousSibling!.previousSibling !== null) {
         this.setBGColorForPreviousSibling(e)
+        this.selectChildren(e)
       } else if (eventTarget.previousSibling!.previousSibling !== null) {
         this.setBGColorForPreviousSibling(e)
+        this.selectChildren(e)
       } else if (
         eventTarget.previousSibling!.previousSibling === null &&
         currentElement.style.backgroundColor !== 'rgb(59, 122, 231)'
       ) {
         this.setBGColorForPreviousSibling(e)
+        this.selectChildren(e)
       }
       this.arrowUp = true
       if (this.first === 1) {
@@ -1327,11 +1341,6 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
     } else {
       currentElement = nextSiblingEvent
     }
-    if (this.arrowUp) {
-      const a = this.prevEle.nextSibling as HTMLDivElement
-      const b = a.nextSibling as HTMLDivElement
-      currentElement = b
-    }
     if (this.isDrag) {
       let c = this.lastDrag.nextSibling as HTMLDivElement
       if (c !== null) {
@@ -1340,17 +1349,107 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
         currentElement = this.lastDrag
       }
     }
-    this.arrowUp = false
     this.first = 0
     this.afterArrow = 0
     this.clearOptionBGColorAndChecked(e)
-    currentElement.focus()
+    if (currentElement !== null) {
+      currentElement.focus()
+    }
     this.setBGandCheckedForMatch(currentElement)
+    this.selectChildren(e)
+  }
+  if (e.key === 'ArrowUp' && this.properties.MultiSelect === 2 && !e.shiftKey && (this.afterArrow === 1 || this.isDrag)) {
+    let currentElement: HTMLDivElement
+    if (prevSiblingEvent === null) {
+      currentElement = nextSiblingEvent.previousSibling! as HTMLDivElement
+    } else {
+      currentElement = prevSiblingEvent
+    }
+    if (this.isDrag) {
+      let c = this.lastDrag.previousSibling as HTMLDivElement
+      if (c !== null) {
+        currentElement = c
+      } else {
+        currentElement = this.lastDrag
+      }
+    }
+    this.first = 0
+    this.afterArrow = 0
+    this.clearOptionBGColorAndChecked(e)
+    if (currentElement !== null) {
+      currentElement.focus()
+    }
+    this.setBGandCheckedForMatch(currentElement)
+    this.selectChildren(e)
   }
   if (e.key === 'ArrowUp' && this.properties.MultiSelect === 2 && !e.shiftKey && this.afterArrow === 1) {
     this.afterArrow = 0
   }
+  if (e.key === 'PageUp' || e.key === 'PageDown') {
+    for (let point = 0; point < tempPath.length; point++) {
+      const element = tempPath[point] as HTMLDivElement
+      if (element.className === 'table-body') {
+        for (let index = 0; index < element.childNodes.length; index++) {
+          const pageUp = element.childNodes[0] as HTMLDivElement
+          const pageDown = element.childNodes[element.childNodes.length - 1] as HTMLDivElement
+          this.clearOptionBGColorAndChecked(e)
+          if (e.key === 'PageUp') {
+            this.setBGandCheckedForMatch(pageUp)
+          }
+          if (e.key === 'PageDown') {
+            this.setBGandCheckedForMatch(pageDown)
+          }
+        }
+        this.selectChildren(e)
+        this.first = 0
+        this.arrowMove = 1
+        this.afterArrow = 1
+        break
+      }
+    }
+  }
   this.isDrag = false
+}
+
+selectChildren (e: KeyboardEvent) {
+  const tempPath = e.composedPath()
+  for (let point = 0; point < tempPath.length; point++) {
+    const element = tempPath[point] as HTMLDivElement
+    if (element.className === 'table-body') {
+      for (let index = 0; index < element.childNodes.length; index++) {
+        const ei = element.childNodes[index] as HTMLDivElement
+        if (ei.style.backgroundColor === 'rgb(59, 122, 231)') {
+          for (let i = 1; i < ei.childNodes.length; i++) {
+            const childEle = ei.childNodes[i] as HTMLDivElement
+            childEle.style.backgroundColor = 'rgb(59, 122, 231)'
+            childEle.style.color = 'white'
+          }
+        }
+      }
+      break
+    }
+  }
+}
+
+captureTarget (e: MouseEvent) {
+  const eveTarget = e.target as HTMLDivElement
+  this.startNode = eveTarget
+  const tempPath = e.composedPath()
+  const tNode = eveTarget.parentElement as HTMLDivElement
+  let key = 0
+  if (eveTarget.tagName === 'tr') {
+    key = eveTarget.tabIndex
+  } else {
+    key = tNode.tabIndex
+  }
+  if (eveTarget.style.backgroundColor === 'rgb(59, 122, 231)') {
+    if (!this.selectedItems.includes(key)) {
+      this.selectedItems.push(key)
+    }
+  } else if (this.selectedItems.includes(key)) {
+    const index = this.selectedItems.indexOf(key)
+    this.selectedItems.splice(index, 1)
+  }
 }
 
 /**
@@ -1360,17 +1459,103 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
 * @event mouseenter
 *
 */
-handleDrag (e: MouseEvent) {
+handleDrag (e: any) {
   const etarget = e.target as HTMLDivElement
+  const tempPath = e.composedPath()
+  let startPoint = 0
+  let endPoint = 0
+  const tNode = etarget.parentElement as HTMLDivElement
   if (this.properties.MultiSelect === 2) {
     if (e.which === 1) {
-      if (etarget.style.backgroundColor === 'rgb(59, 122, 231)') {
-        this.unselectBGColorAndchecked(e)
+      if (this.startNode.className === 'tr') {
+        startPoint = this.startNode.tabIndex
       } else {
-        this.setOptionBGColorAndChecked(e)
+        if (this.startNode !== undefined) {
+          const pNode = this.startNode.parentElement as HTMLDivElement
+          startPoint = pNode.tabIndex
+        }
+      }
+      if (etarget.className === 'tr') {
+        endPoint = etarget.tabIndex
+      } else {
+        endPoint = tNode.tabIndex
+      }
+      if (startPoint > endPoint) {
+        let temp = startPoint
+        startPoint = endPoint
+        endPoint = temp
+      }
+      this.clearOptionBGColorAndChecked(e)
+      this.selectOnHover(startPoint, endPoint, tempPath)
+      this.selectChildren(e)
+      this.lastDrag = etarget
+      this.isDrag = true
+    }
+  } else if (this.properties.MultiSelect === 0) {
+    if (e.which === 1) {
+      if (etarget.className === 'tr') {
+        startPoint = endPoint = etarget.tabIndex
+      } else {
+        startPoint = endPoint = tNode.tabIndex
+      }
+      this.clearOptionBGColorAndChecked(e)
+      this.selectOnHover(startPoint, endPoint, tempPath)
+      this.selectChildren(e)
+    }
+  } else if (this.properties.MultiSelect === 1) {
+    if (e.which === 1) {
+      if (etarget.className === 'tr') {
+        startPoint = endPoint = etarget.tabIndex
+      } else {
+        startPoint = endPoint = tNode.tabIndex
+      }
+      this.clearOptionBGColorAndChecked(e)
+      this.selectOnHover(startPoint, endPoint, tempPath)
+      this.selectedItems.forEach((ele, index) => {
+        if (index !== this.selectedItems.length - 1) {
+          this.selectOnHover(ele, ele, tempPath)
+        }
+      })
+      this.selectChildren(e)
+    }
+  }
+  window.getSelection()!.removeAllRanges()
+}
+
+handleMouseLeave (e: any) {
+  const etarget = e.target as HTMLDivElement
+  const tempPath = e.composedPath()
+  let startPoint = 0
+  let endPoint = 0
+  const tNode = etarget.parentElement as HTMLDivElement
+  this.selectedItems.forEach((ele, index) => {
+    if (ele !== tNode.tabIndex || ele !== etarget.tabIndex) {
+      this.selectOnHover(ele, ele, tempPath)
+    }
+  })
+  console.log('mouse leave')
+}
+
+handleMouseUp (e: any) {
+  const etarget = e.target as HTMLDivElement
+  const tempPath = e.composedPath()
+  let startPoint = 0
+  let endPoint = 0
+}
+
+selectOnHover (startPoint: number, endPoint: number, tempPath: any) {
+  for (let i = 0; i < tempPath.length; i++) {
+    const ele = tempPath[i] as HTMLDivElement
+    if (ele.className === 'table-body') {
+      for (let k = startPoint; k <= endPoint; k++) {
+        const node = ele.childNodes[k] as HTMLDivElement
+        const tempNode = node.childNodes[0].childNodes[0] as HTMLInputElement
+        node.style.backgroundColor = 'rgb(59, 122, 231)'
+        if (this.properties.ListStyle === 1 && !tempNode.checked) {
+          tempNode.checked = !tempNode.checked
+        }
       }
     }
-   window.getSelection()!.removeAllRanges()
   }
 }
 
@@ -1388,6 +1573,10 @@ setBGColorForNextSibling (e: MouseEvent | KeyboardEvent) {
    nextSiblingEvent.style.backgroundColor === 'rgb(59, 122, 231)'
      ? ''
      : 'rgb(59, 122, 231)'
+    nextSiblingEvent.style.color =
+   nextSiblingEvent.style.color === 'white'
+     ? 'black'
+     : 'white'
     if (
       this.properties.ListStyle === 1 &&
    this.properties.MultiSelect === 2
@@ -1411,6 +1600,10 @@ setBGColorForPreviousSibling (e: KeyboardEvent) {
    prevSiblingEvent.style.backgroundColor === 'rgb(59, 122, 231)'
      ? ''
      : 'rgb(59, 122, 231)'
+    prevSiblingEvent.style.color =
+   prevSiblingEvent.style.color === 'white'
+     ? 'black'
+     : 'white'
     if (
       this.properties.ListStyle === 1 &&
    this.properties.MultiSelect === 2
@@ -1431,6 +1624,7 @@ clearOptionBGColorAndChecked (e: any) {
       if (e.path[i].className === 'tBodyStyle') {
         for (let j = 0; j < e.path[i].children.length; j++) {
           e.path[i].children[j].style.backgroundColor = ''
+          e.path[i].children[j].style.color = 'black'
         }
       }
     }
@@ -1447,9 +1641,11 @@ clearOptionBGColorAndChecked (e: any) {
         ) {
           const childNode = element.childNodes[childIndex] as HTMLDivElement
           childNode.style.backgroundColor = ''
+          childNode.style.color = 'black'
           for (let i = 0; i < childNode.children.length; i++) {
             const a = childNode.children[i] as HTMLDivElement
             a.style.backgroundColor = ''
+            a.style.color = 'black'
           }
           const ChildChecked = childNode.childNodes[0].childNodes[0] as HTMLInputElement
           if (ChildChecked && this.properties.ListStyle === 1) {
@@ -1475,6 +1671,10 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
    currentTargetElement.style.backgroundColor === 'rgb(59, 122, 231)'
      ? ''
      : 'rgb(59, 122, 231)'
+    currentTargetElement.style.color =
+   currentTargetElement.style.color === 'white'
+     ? 'black'
+     : 'white'
   }
   if (this.data.type === 'ComboBox') {
     childNodeChecked.checked = !childNodeChecked.checked
@@ -1483,6 +1683,7 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
     const targetEvent = e.target
     if (this.data.type === 'ComboBox') {
       currentTargetElement.style.backgroundColor = ''
+      currentTargetElement.style.color = 'black'
     }
     if (
       this.properties.ListStyle === 1 &&
@@ -1491,39 +1692,49 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
       childNodeChecked.checked = !childNodeChecked.checked
       if (childNodeChecked.checked === true) {
         currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
+        currentTargetElement.style.color = 'white'
       } else {
         currentTargetElement.style.backgroundColor = ''
+        currentTargetElement.style.color = 'black'
       }
     } else {
       childNodeChecked.checked = !childNodeChecked.checked
       if (this.properties.MultiSelect === 0) {
         currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
+        currentTargetElement.style.color = 'white'
         if (this.properties.ListStyle === 1) {
           if (childNodeChecked.checked) {
             currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
+            currentTargetElement.style.color = 'white'
           }
         }
       } else if (this.properties.MultiSelect === 1) {
         if (currentTargetElement.style.backgroundColor === 'rgb(59, 122, 231)') {
           currentTargetElement.style.backgroundColor = ''
+          currentTargetElement.style.color = 'black'
           if (this.properties.ListStyle === 1) {
             if (childNodeChecked.checked) {
               currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
+              currentTargetElement.style.color = 'white'
             } else {
               currentTargetElement.style.backgroundColor = ''
+              currentTargetElement.style.color = 'black'
             }
           }
         } else {
           currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
+          currentTargetElement.style.color = 'white'
           if (this.properties.ListStyle === 1) {
             if (childNodeChecked.checked) {
               currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
+              currentTargetElement.style.color = 'white'
             }
           }
         }
       } else if (this.properties.MultiSelect === 2) {
         childNodeChecked.checked = true
         currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
+        currentTargetElement.style.color = 'white'
       }
     }
   }
@@ -1535,6 +1746,12 @@ unselectBGColorAndchecked (e: KeyboardEvent | MouseEvent) {
   if (this.properties.MultiSelect === 2) {
     childNodeChecked.checked = false
     currentTargetElement.style.backgroundColor = ''
+    currentTargetElement.style.color = 'black'
+    for (let i = 1; i < currentTargetElement.childNodes.length; i++) {
+      const childEle = currentTargetElement.childNodes[i] as HTMLDivElement
+      childEle.style.backgroundColor = ''
+      childEle.style.color = 'black'
+    }
   }
 }
 
@@ -1544,8 +1761,9 @@ unselectBGColorAndchecked (e: KeyboardEvent | MouseEvent) {
 * @param singleMatch which is an HTMLDivElement
 */
 setBGandCheckedForMatch (singleMatch: HTMLDivElement) {
-  if (singleMatch !== undefined) {
+  if (singleMatch !== undefined && singleMatch !== null) {
     singleMatch.style.backgroundColor = 'rgb(59, 122, 231)'
+    singleMatch.style.color = 'white'
     if ((this.properties.ListStyle === 1)) {
       const tempNode = singleMatch.childNodes[0].childNodes[0] as HTMLInputElement
       tempNode.checked = !tempNode.checked

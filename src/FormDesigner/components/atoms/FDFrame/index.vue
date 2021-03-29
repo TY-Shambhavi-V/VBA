@@ -43,13 +43,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Emit, Mixins, Prop, Ref, Watch } from 'vue-property-decorator'
-import FdControlVue from '@/api/abstract/FormDesigner/FdControlVue'
-import { Action } from 'vuex-class'
+import { Component, Emit, Mixins, Ref, Watch } from 'vue-property-decorator'
 import Vue from 'vue'
 import FdContainerVue from '@/api/abstract/FormDesigner/FdContainerVue'
 import Container from '@/FormDesigner/components/organisms/FDContainer/index.vue'
-import { controlProperties } from '@/FormDesigner/controls-properties'
 import { EventBus } from '@/FormDesigner/event-bus'
 @Component({
   name: 'FDFrame',
@@ -61,7 +58,7 @@ import { EventBus } from '@/FormDesigner/event-bus'
 export default class FDFrame extends Mixins(FdContainerVue) {
   @Ref('containerRef') readonly containerRef!: Container;
   @Ref('frame') readonly frame!: HTMLDivElement;
-  @Ref('fieldsetRef') fieldsetRef: HTMLLegendElement;
+  @Ref('fieldsetRef') fieldsetRef!: HTMLLegendElement;
   captionHeight: number = 0;
 
   /**

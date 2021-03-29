@@ -49,10 +49,10 @@ import Vue from 'vue'
 })
 export default class FDLabel extends Mixins(FdControlVue) {
   $el!: HTMLLabelElement;
-  @Ref('componentRef') componentRef: HTMLLabelElement
+  @Ref('componentRef') componentRef!: HTMLLabelElement
   @Ref('textSpanRef') textSpanRef!: HTMLDivElement
-  @Ref('imageRef') imageRef: HTMLImageElement
-  @Ref('logoRef') logoRef : HTMLDivElement
+  @Ref('imageRef') imageRef!: HTMLImageElement
+  @Ref('logoRef') logoRef! : HTMLDivElement
   @Ref('editableTextRef') editableTextRef!: FDEditableText
   /**
    * @description style object is passed to :style attribute in label tag

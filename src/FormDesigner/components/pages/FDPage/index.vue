@@ -1,5 +1,5 @@
 <template>
-  <div id="app" tabindex="0" @focus="updatefocus" @contextmenu.stop="preventcontextMenu" @keydown.esc="closeMenu">
+  <div id="app" @mousedown="closeTextMenu" @blur="closeTextMenu" tabindex="0" @focus="updatefocus" @contextmenu.stop="preventcontextMenu" @keydown.esc="closeMenu">
     <div
       id="right-click-menu"
       :style="contextMenuStyle"
@@ -101,7 +101,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Ref, Vue } from 'vue-property-decorator'
+import { Component, Ref, Vue, Watch } from 'vue-property-decorator'
 import ToolBox from '@/FormDesigner/components/organisms/FDToolBox/index.vue'
 import ResizeUserForm from '@/FormDesigner/components/organisms/FDResizeUserForm/index.vue'
 import PropertiesList from '@/FormDesigner/components/organisms/FDPropertyList/index.vue'
@@ -155,16 +155,17 @@ interface IDialog
 export default class FDPage extends Vue {
   @State((state) => state.fd.userformData) userformData!: userformData;
   @State((state) => state.fd.copiedControl) copiedControl!: userformData;
-  @Ref('contextmenu') contextmenu: HTMLDivElement
-  @Ref('mainConextMenu') mainConextMenu: ContextMenu
-  @Ref('renameDialogRef') renameDialogRef: RenameMultiPageDialog
-  @Ref('userformTabOrderRef') userformTabOrderRef: UserformTabOrder
-  @Ref('tabstripTabOrderRef') tabstripTabOrderRef: TabStripTabOrder
+  @Ref('contextmenu') contextmenu!: HTMLDivElement
+  @Ref('mainConextMenu') mainConextMenu!: ContextMenu
+  @Ref('renameDialogRef') renameDialogRef!: RenameMultiPageDialog
+  @Ref('userformTabOrderRef') userformTabOrderRef!: UserformTabOrder
+  @Ref('tabstripTabOrderRef') tabstripTabOrderRef!: TabStripTabOrder
   containerId: string = ''
   controlId: string = ''
   copiedText = ''
   labelArea: any = {}
   textMenu: boolean = false
+  controlTextMenu: string = ''
 
   vertical: string = 'vertical';
   renameDialog: boolean = false
@@ -195,13 +196,23 @@ export default class FDPage extends Vue {
   contextMenuHeight: number = 84
   groupStyleArray: Array<IGroupStyle> = []
   updatedValue: number = 0
-  tabData: controlData
+  tabData!: controlData
   tabstripContextMenu: boolean = false
 
-  closeMenu (event: MouseEvent) {
-    this.textMenu = false
-    this.viewMenu = false
-    EventBus.$emit('focusUserForm')
+  closeTextMenu () {
+    if (this.textMenu && this.viewMenu) {
+      this.textMenu = false
+      this.viewMenu = false
+      EventBus.$emit('focusUserForm')
+    }
+  }
+
+  closeMenu () {
+    if (this.viewMenu) {
+      this.textMenu = false
+      this.viewMenu = false
+      EventBus.$emit('focusUserForm')
+    }
   }
   onDrag () {
     (this.$el as HTMLDivElement).focus()
@@ -456,6 +467,7 @@ export default class FDPage extends Vue {
     this.textMenu = true
     event.preventDefault()
     event.stopPropagation()
+    this.controlTextMenu = this.selectedControls[this.userFormId].selected[0]
     navigator.clipboard.readText()
       .then(text => {
         this.copiedText = text
@@ -480,7 +492,7 @@ export default class FDPage extends Vue {
             val.disabled = true
           }
         }
-        Vue.nextTick(() => this.contextmenu.focus())
+        // Vue.nextTick(() => this.contextmenu.focus())
         this.top = event.y
         this.left = event.x
         this.viewMenu = true
@@ -491,16 +503,26 @@ export default class FDPage extends Vue {
   }
   getCursorPos (event: MouseEvent) {
     const controlType = this.userformData[this.userFormId][this.controlId].type
-    const isSupported = typeof window.getSelection !== 'undefined'
-    if (isSupported) {
-      const selection = window.getSelection()!
-      if (selection.anchorOffset === selection.focusOffset) {
-        return true
-      } else {
+    if (controlType === 'ComboBox' || controlType === 'TextBox') {
+      const eventTarget = event.target as HTMLTextAreaElement
+      const difference = eventTarget.selectionEnd - eventTarget.selectionStart
+      if (difference > 0) {
         return false
+      } else {
+        return true
       }
+    } else {
+      const isSupported = typeof window.getSelection !== 'undefined'
+      if (isSupported) {
+        const selection = window.getSelection()!
+        if (selection.anchorOffset === selection.focusOffset) {
+          return true
+        } else {
+          return false
+        }
+      }
+      return true
     }
-    return true
   }
   handleKeyDown (event: KeyboardEvent) {
     this.mainConextMenu.updateAction(event)
@@ -533,6 +555,20 @@ export default class FDPage extends Vue {
   }
   preventcontextMenu (event: MouseEvent) {
     event.preventDefault()
+  }
+  @Watch('selectedControls', { deep: true })
+  updateContextMenu () {
+    const selected = this.selectedControls[this.userFormId].selected
+    const userData = this.userformData[this.userFormId]
+    if (selected[0].startsWith('group') || (userData[selected[0]].type !== 'Userform')) {
+      if (selected.length === 1 && selected[0] !== this.controlTextMenu) {
+        this.textMenu = false
+      }
+    }
+    if (this.viewMenu && this.textMenu) {
+      this.closeMenu()
+      this.controlTextMenu = ''
+    }
   }
 }
 </script>

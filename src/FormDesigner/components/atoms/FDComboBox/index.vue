@@ -1,4 +1,5 @@
 <template>
+<div>
   <div
     class="custom-select"
     :tabindex="tabindex"
@@ -41,7 +42,7 @@
           :maxlength="properties.MaxLength !== 0 ? properties.MaxLength : ''"
           @blur="handleBlur($event, textareaRef, hideSelectionDiv)"
           @click="handleClick($event, textareaRef, hideSelectionDiv)"
-          @keyup="handleTextInput($event)"
+          @input="handleTextInput($event)"
           class="text-box-design"
           :value="properties.Text"
           @dragstart="dragBehavior"
@@ -163,7 +164,14 @@
         </div>
       </div>
     </div>
-      <div class="items" :class="{ selectHide: !open }" :style="itemsStyleObj" @mouseover="updateMouseCursor" ref="itemsRef">
+    </div>
+        <label
+          ref="autoSizeTextarea"
+          class="labelStyle"
+          :class="labelStyleObj"
+        ></label>
+  </div>
+  <div class="items" :class="{ selectHide: !open }" :style="itemsStyleObj" @mouseover="updateMouseCursor" ref="itemsRef">
         <div
           class="listStyle"
           :title="properties.ControlTipText"
@@ -228,7 +236,6 @@
               <div
                 :tabindex="index"
                 class="tr"
-                v-bind:class="{active: isActive}"
                 @mouseover="mouseOverEvent"
                 :disabled="!properties.Enabled || properties.Locked"
                 v-for="(item, index) of tempArray"
@@ -275,14 +282,8 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
-        <label
-          ref="autoSizeTextarea"
-          class="labelStyle"
-          :class="labelStyleObj"
-        ></label>
   </div>
+</div>
 </template>
 
 <script lang="ts">
@@ -300,7 +301,7 @@ import { EventBus } from '@/FormDesigner/event-bus'
 })
 export default class FDComboBox extends Mixins(FdControlVue) {
   $el!: HTMLDivElement;
-  @Ref('textareaRef') textareaRef: HTMLTextAreaElement;
+  @Ref('textareaRef') textareaRef!: HTMLTextAreaElement;
   @Ref('autoSizeTextarea') readonly autoSizeTextarea!: HTMLLabelElement;
   @Ref('hideSelectionDiv') readonly hideSelectionDiv!: HTMLDivElement;
   @Ref('comboRef') comboRef!: HTMLDivElement;
@@ -318,36 +319,11 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   tempInputValue: string = '';
   tempWidth: string = '0px';
   isScrolling: boolean = false;
-  tempHeight: number;
+  tempHeight: number = 0;
   inBlur: boolean = false;
   headWidth: string = '100%';
   controlZIndex: number = -1;
   newColumnWidthsValue: string = '';
-  count: number = 0;
-  enteredItems: Array<string> = [];
-  repeat: Array<string> = [];
-  num: Array<string> = [];
-  items: Array<string> = [];
-  prev: string = '';
-  start: number = 0;
-  wordCount: number = 0;
-  prevLen: number = 0;
-  flag: number = 0;
-  comboEle: HTMLDivElement;
-  startPos: number = 0;
-  endPos: number = 0;
-  beforeEnter: number = 0;
-  ele: number = -1;
-  shiftKey: number = 0;
-  selStart: number = 0;
-  selEnd: number = 0;
-  // arrowUp: number = 0;
-  shiftStart: number = 0;
-  shiftFlag: number = 0;
-  mouseFlag: boolean = false;
-  matchedItem: string = '';
-  isActive: boolean = true;
-  curEnd: number = 0;
 
   get arrowButtonStyleObj () {
     return {
@@ -385,36 +361,31 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     }
   }
   mouseOverEvent (e: MouseEvent) {
-    this.isActive = true
     if (this.properties.Enabled && !this.properties.Locked) {
       const eTarget = e.target as HTMLDivElement
       for (let i = 0; i < eTarget.parentElement!.parentElement!.children.length; i++) {
-        if (eTarget.parentElement!.className === 'tr' || eTarget.parentElement!.className !== 'active') {
+        if (eTarget.parentElement!.className === 'tr') {
           const a = eTarget.parentElement!.parentElement!.children[i] as HTMLDivElement
           a.style.backgroundColor = ''
-          a.style.color = ''
         }
       }
       for (let i = 0; i < eTarget.parentElement!.parentElement!.parentElement!.children.length; i++) {
-        if (eTarget.parentElement!.parentElement!.className === 'tr' || eTarget.parentElement!.parentElement!.className !== 'active') {
+        if (eTarget.parentElement!.parentElement!.className === 'tr') {
           const a = eTarget.parentElement!.parentElement!.parentElement!.children[i] as HTMLDivElement
           a.style.backgroundColor = ''
-          a.style.color = '#000000'
         }
       }
       if (eTarget.parentElement!.children[0].className === 'tdClassIn') {
         const input = eTarget.parentElement!.children[0].children[0] as HTMLInputElement
         input.checked = true
-        if (eTarget.parentElement!.className === 'tr' || eTarget.parentElement!.className !== 'active') {
-        eTarget.parentElement!.style.backgroundColor = 'rgb(0, 120, 215)'
-        eTarget.parentElement!.style.color = '#FFFFFF'
+        if (eTarget.parentElement!.className === 'tr') {
+        eTarget.parentElement!.style.backgroundColor = 'rgb(59, 122, 231)'
         }
       } else if (eTarget.className === 'inputClass') {
         const anotherInput = eTarget as HTMLInputElement
         anotherInput.checked = true
       }
     }
-    this.mouseFlag = true
   }
 
   makeOpen () {
@@ -480,13 +451,13 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     }
   }
 
-  // @Watch('properties.Text', { deep: true })
-  // valueUpdateProp (newVal:string, oldVal:string) {
-  //   const propData: controlProperties = this.properties
-  //   if (this.properties.BoundColumn === this.properties.TextColumn) {
-  //     this.updateDataModel({ propertyName: 'Value', value: newVal })
-  //   }
-  // }
+  @Watch('properties.Text', { deep: true })
+  valueUpdateProp (newVal:string, oldVal:string) {
+    const propData: controlProperties = this.properties
+    if (this.properties.BoundColumn === this.properties.TextColumn) {
+      this.updateDataModel({ propertyName: 'Value', value: newVal })
+    }
+  }
 
   handleMultiSelect (e: MouseEvent) {
     if (e.target instanceof HTMLTableCellElement || e.target instanceof HTMLTableRowElement || e.target instanceof HTMLDivElement) {
@@ -588,7 +559,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     const a = e.currentTarget! as HTMLDivElement
     this.selectionData[0] = a.innerText
     for (let i = 0; i < this.extraDatas.RowSourceData!.length; i++) {
-      const b = this.trRef[i].children[0] as HTMLDivElement
+      const b = this.properties.ListStyle === 0 ? this.trRef[i].children[0] as HTMLDivElement : this.trRef[i].children[1] as HTMLDivElement
       const aInnerText = a.innerText.split('\n')
       if (aInnerText[0] === b.innerText) {
         if (this.properties.TextColumn === -1) {
@@ -609,13 +580,11 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   @Watch('open')
   openValidate () {
     if (this.open) {
-      this.updateDataModelExtraData({ propertyName: 'zIndex', value: -1 })
       this.listHeightValue()
       if (this.properties.RowSource === '') {
         this.updateEmptyColumnHeight()
       }
     } else {
-      this.updateDataModelExtraData({ propertyName: 'zIndex', value: this.controlZIndex })
     }
     if (this.open && this.properties.RowSource !== '') {
       Vue.nextTick(() => {
@@ -1477,20 +1446,22 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     const controlProp = this.properties
     return {
       width: controlProp.Width! > 21 ? 'fit-content' : '0px',
-      gridTemplateColumns: controlProp.Width! > 21 ? '5px auto' : '0px 0px'
+      gridTemplateColumns: controlProp.Width! > 21 ? '5px ' + `${controlProp.Width! - 29}px` : '0px 0px'
 
     }
   }
   dblclick (e: Event) {
-    let newSelectionStart = 0
-    const eTarget = e.target as HTMLTextAreaElement
-    for (let i = eTarget.selectionStart; i > 0; i--) {
-      if (eTarget.value[i - 1] === ' ' || eTarget.value[i - 1] === undefined) {
-        newSelectionStart = i
-        break
+    if (this.isEditMode) {
+      let newSelectionStart = 0
+      const eTarget = e.target as HTMLTextAreaElement
+      for (let i = eTarget.selectionStart; i > 0; i--) {
+        if (eTarget.value[i - 1] === ' ' || eTarget.value[i - 1] === undefined) {
+          newSelectionStart = i
+          break
+        }
       }
+      this.textareaRef.setSelectionRange(newSelectionStart, eTarget.selectionEnd)
     }
-    this.textareaRef.setSelectionRange(newSelectionStart, eTarget.selectionEnd)
   }
 
   toFocus () {
@@ -1534,307 +1505,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     }
   }
 
-  matchFirst (e: KeyboardEvent) {
-    this.selStart = this.textareaRef.selectionStart
-    this.selEnd = this.textareaRef.selectionEnd
-    for (let i = 0; i < this.tempArray.length; i++) {
-      if (this.mouseFlag === false) {
-        const comboDiv = this.comboRef.children[1].children[i] as HTMLDivElement
-        this.clearBGandCheck(comboDiv)
-      }
-    }
-    for (let i = 0; i < this.tempArray.length; i++) {
-      if (this.tempArray[i][0][0] === this.textareaRef.value[0]) {
-        this.items.push(this.tempArray[i][0])
-      }
-      const comboDiv = this.comboRef.children[1].children[i] as HTMLDivElement
-      this.clearBGandCheck(comboDiv)
-    }
-    if (this.prev !== this.textareaRef.value[0]) {
-      this.count = 0
-    }
-    if (this.count >= this.items.length) {
-      this.count = 0
-    }
-    this.prev = this.textareaRef.value[0]
-    for (let i = 0; i < this.tempArray.length; i++) {
-      if (this.tempArray[i][0][0] === this.textareaRef.value[0]) {
-        this.count++
-        if (!this.tempArray[i][0].includes(this.textareaRef.value)) {
-          this.updateDataModel({
-            propertyName: 'Text',
-            value: this.textareaRef.value
-          })
-          this.startPos = this.endPos = this.textareaRef.selectionStart
-        }
-        if (this.tempArray[i][0].includes(this.textareaRef.value) && this.ele !== 0 && e.key !== 'ArrowUp') {
-          this.textareaRef.value = this.items[this.count - 1]
-          this.updateDataModel({
-            propertyName: 'Text',
-            value: this.items[this.count - 1]
-          })
-          this.startPos = 0
-          this.endPos = this.textareaRef.value.length
-        }
-        break
-      }
-    }
-    for (let j = 0; j < this.tempArray.length; j++) {
-      const comboDiv = this.comboRef.children[1].children[j] as HTMLDivElement
-      this.clearBGandCheck(comboDiv)
-      if (this.tempArray[j][0] === this.textareaRef.value) {
-        this.setBGandCheckedForMatch(comboDiv)
-      }
-    }
-    if (e.key === 'Enter' && !e.shiftKey) {
-      this.startPos = 0
-      this.endPos = this.textareaRef.value.length
-    }
-    if (!e.shiftKey && e.key !== 'Shift') {
-      this.textareaRef.setSelectionRange(
-        this.startPos,
-        this.endPos,
-        'forward'
-      )
-    }
-    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.shiftKey) {
-      this.selection(this.selStart, this.selStart, 1)
-    }
-    if (e.key === 'ArrowUp' && !e.shiftKey && this.properties.Enabled) {
-      this.selection(this.textareaRef.value.length, this.textareaRef.value.length, 1)
-      for (let i = 0; i < this.tempArray.length; i++) {
-        if (this.textareaRef.value === '' || this.ele === 0) {
-          this.ele = 1
-        }
-        if (this.textareaRef.value === this.tempArray[i][0]) {
-          this.ele = i
-        }
-      }
-      if (this.ele <= this.tempArray.length) {
-        this.updateModel(this.tempArray[--this.ele][0])
-        const comboDiv = this.comboRef.children[1].children[this.ele] as HTMLDivElement
-        this.clearBGandCheck(comboDiv)
-        for (let j = 0; j < this.tempArray.length; j++) {
-          const com = this.comboRef.children[1].children[j] as HTMLDivElement
-          this.clearBGandCheck(com)
-        }
-        this.setBGandCheckedForMatch(comboDiv)
-      }
-    } else if (e.key === 'ArrowDown' && !e.shiftKey && this.properties.Enabled) {
-      for (let i = 0; i < this.tempArray.length; i++) {
-        if (this.textareaRef.value === '') {
-          this.ele = -1
-        }
-        if (this.textareaRef.value === this.tempArray[i][0]) {
-          this.ele = i
-        }
-      }
-      if (this.ele >= 0 && this.ele < this.tempArray.length - 1) {
-        this.updateModel(this.tempArray[++this.ele][0])
-        const comboDiv = this.comboRef.children[1].children[this.ele] as HTMLDivElement
-        this.clearBGandCheck(comboDiv)
-        for (let j = 0; j < this.tempArray.length; j++) {
-          const com = this.comboRef.children[1].children[j] as HTMLDivElement
-          this.clearBGandCheck(com)
-        }
-        this.setBGandCheckedForMatch(comboDiv)
-      }
-    }
-    this.items = []
-  }
-
-  setBGandCheckedForMatch (singleMatch: HTMLDivElement) {
-    if (singleMatch !== undefined) {
-      singleMatch.style.backgroundColor = 'rgb(0, 120, 215)'
-      singleMatch.style.color = '#FFF'
-      if ((this.properties.ListStyle === 1)) {
-        const tempNode = singleMatch.childNodes[0].childNodes[0] as HTMLInputElement
-        tempNode.checked = true
-      }
-    }
-  }
-
-  clearBGandCheck (singleMatch: HTMLDivElement) {
-    if (singleMatch !== undefined) {
-      singleMatch.style.backgroundColor = ''
-      singleMatch.style.color = ''
-      if ((this.properties.ListStyle === 1)) {
-        const tempNode = singleMatch.childNodes[0].childNodes[0] as HTMLInputElement
-        tempNode.checked = false
-      }
-    }
-  }
-
-  selection (start: number, end: number, direction: number) {
-    if (direction === 1) {
-      this.textareaRef.setSelectionRange(start, end, 'forward')
-    } else {
-      this.textareaRef.setSelectionRange(start, end, 'backward')
-    }
-  }
-
-  updateModel (val: string) {
-    this.updateDataModel({
-      propertyName: 'Text',
-      value: val
-    })
-  }
-
-  matchComplete (e: KeyboardEvent) {
-    // debugger
-    this.selStart = this.textareaRef.selectionStart
-    this.selEnd = this.textareaRef.selectionEnd
-    for (let i = 0; i < this.tempArray.length; i++) {
-      if (this.mouseFlag === false) {
-        const comboDiv = this.comboRef.children[1].children[i] as HTMLDivElement
-        this.clearBGandCheck(comboDiv)
-      }
-    }
-    for (let i = 0; i < this.tempArray.length; i++) {
-      const comboDiv = this.comboRef.children[1].children[i] as HTMLDivElement
-      this.clearBGandCheck(comboDiv)
-      let isCap = false
-      if (this.textareaRef.value[0] !== undefined) {
-        if (this.tempArray[i][0][0] === this.textareaRef.value[0].toLowerCase()) {
-          this.start = this.selStart
-          if (this.textareaRef.value[0].toUpperCase() === this.textareaRef.value[0]) {
-            isCap = true
-          }
-          if (!this.tempArray[i][0].includes(this.textareaRef.value)) {
-            this.updateModel(this.textareaRef.value)
-          }
-          if (this.tempArray[i][0].includes(this.textareaRef.value.toLowerCase()) && this.flag === 0) {
-            this.updateModel(this.tempArray[i][0])
-            this.textareaRef.value = this.tempArray[i][0]
-            for (let j = 0; j < this.tempArray.length; j++) {
-              const com = this.comboRef.children[1].children[j] as HTMLDivElement
-              this.clearBGandCheck(com)
-            }
-            this.matchedItem = this.tempArray[i][0]
-            this.setBGandCheckedForMatch(comboDiv)
-            this.comboEle = comboDiv
-            if ((!e.shiftKey && e.key !== 'ArrowLeft' &&
-            e.key !== 'ArrowRight' && e.key !== 'Shift') ||
-            (isCap === true)) {
-              this.selection(this.start, this.textareaRef.value.length, 1)
-            }
-            break
-          }
-        }
-      }
-    }
-    if (e.key === 'Backspace' && !e.shiftKey) {
-      if (this.curEnd === 1) {
-        this.prevLen = this.textareaRef.value.length
-      }
-      if (this.textareaRef.value.length === this.prevLen) {
-        this.start += 1
-      }
-      this.curEnd = 0
-      this.start -= 1
-      if (this.start === 0 && this.textareaRef.selectionEnd === this.textareaRef.value.length) {
-        this.updateModel('')
-        this.textareaRef.value = ''
-        this.clearBGandCheck(this.comboEle)
-        this.selection(this.selStart, this.selStart, 1)
-      }
-      if (this.selStart === this.selEnd &&
-       this.textareaRef.selectionStart !== this.textareaRef.value.length &&
-       this.textareaRef.selectionStart === this.textareaRef.selectionEnd) {
-        this.updateModel(this.textareaRef.value)
-        this.selection(this.selStart, this.selStart, 1)
-        this.clearBGandCheck(this.comboEle)
-        this.flag = 1
-      } else if (this.matchedItem !== this.textareaRef.value) {
-        this.selection(this.start, this.start, 1)
-      } else {
-        this.selection(this.start, this.textareaRef.value.length, 1)
-      }
-    } else if (e.key === 'Delete' && !e.shiftKey) {
-      if (this.textareaRef.selectionStart !== this.start &&
-      this.textareaRef.selectionStart !== this.textareaRef.selectionEnd) {
-        this.textareaRef.value = this.textareaRef.value.slice(0, this.start)
-        this.updateModel(this.textareaRef.value)
-        this.selection(this.selStart, this.selStart, 1)
-        this.clearBGandCheck(this.comboEle)
-      } else if (this.selStart === this.prevLen) {
-        this.textareaRef.value = this.textareaRef.value.slice(0, this.selStart) + this.textareaRef.value.slice(this.textareaRef.selectionEnd)
-        this.updateModel(this.textareaRef.value)
-        this.selection(this.selStart, this.selStart, 1)
-        this.clearBGandCheck(this.comboEle)
-      }
-    } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.shiftKey) {
-      this.selection(this.selStart, this.selStart, 1)
-    } else if (e.key === 'ArrowUp' && this.properties.Enabled) {
-      for (let i = 0; i < this.tempArray.length; i++) {
-        if (this.textareaRef.value === '' || this.textareaRef.value === this.tempArray[0][0]) {
-          this.ele = 1
-        }
-        if (this.textareaRef.value === this.tempArray[i][0]) {
-          this.ele = i
-        }
-      }
-      this.updateModel(this.tempArray[--this.ele][0])
-      const comboDiv = this.comboRef.children[1].children[this.ele] as HTMLDivElement
-      this.clearBGandCheck(comboDiv)
-      for (let j = 0; j < this.tempArray.length; j++) {
-        const com = this.comboRef.children[1].children[j] as HTMLDivElement
-        this.clearBGandCheck(com)
-      }
-      this.setBGandCheckedForMatch(comboDiv)
-      this.curEnd = 1
-    } else if (e.key === 'ArrowDown' && this.properties.Enabled) {
-      for (let i = 0; i < this.tempArray.length; i++) {
-        if (this.textareaRef.value === '') {
-          this.ele = -1
-        }
-        if (this.textareaRef.value === this.tempArray[i][0]) {
-          this.ele = i
-        }
-      }
-      if (this.ele < this.tempArray.length - 1) {
-        this.updateModel(this.tempArray[++this.ele][0])
-        const comboDiv = this.comboRef.children[1].children[this.ele] as HTMLDivElement
-        this.clearBGandCheck(comboDiv)
-        for (let j = 0; j < this.tempArray.length; j++) {
-          const com = this.comboRef.children[1].children[j] as HTMLDivElement
-          this.clearBGandCheck(com)
-        }
-        this.setBGandCheckedForMatch(comboDiv)
-        this.curEnd = 1
-      }
-    } else if (e.key === 'PageUp') {
-      this.updateModel(this.tempArray[0][0])
-      const comboDiv = this.comboRef.children[1].children[0] as HTMLDivElement
-      this.clearBGandCheck(comboDiv)
-      for (let j = 0; j < this.tempArray.length; j++) {
-        const com = this.comboRef.children[1].children[j] as HTMLDivElement
-        this.clearBGandCheck(com)
-      }
-      this.setBGandCheckedForMatch(comboDiv)
-      this.curEnd = 1
-    } else if (e.key === 'PageDown') {
-      this.updateModel(this.tempArray[this.tempArray.length - 1][0])
-      const comboDiv = this.comboRef.children[1].children[this.tempArray.length - 1] as HTMLDivElement
-      this.clearBGandCheck(comboDiv)
-      for (let j = 0; j < this.tempArray.length; j++) {
-        const com = this.comboRef.children[1].children[j] as HTMLDivElement
-        this.clearBGandCheck(com)
-      }
-      this.setBGandCheckedForMatch(comboDiv)
-      this.curEnd = 1
-    }
-    if (e.key === 'Enter' && !e.shiftKey) {
-      this.start = this.beforeEnter
-    }
-    this.beforeEnter = this.start
-    this.prevLen = this.selStart
-    if (this.textareaRef.value === '') {
-      this.flag = 0
-    }
-  }
-
-  handleTextInput (e: KeyboardEvent) {
+  handleTextInput (e: Event) {
     const controlPropData = this.properties
     if (controlPropData.AutoTab && controlPropData.MaxLength! > 0) {
       if (e.target instanceof HTMLTextAreaElement) {
@@ -1843,11 +1514,9 @@ export default class FDComboBox extends Mixins(FdControlVue) {
         }
       }
     }
-    this.isActive = false
     if (this.properties.AutoSize) {
       this.updateAutoSize()
     }
-    this.mouseFlag = false
     if (e.target instanceof HTMLTextAreaElement) {
       const tempEvent = e.target
       this.eTargetValue = e.target.value
@@ -1861,10 +1530,21 @@ export default class FDComboBox extends Mixins(FdControlVue) {
           this.textareaRef.focus()
         }
         if (this.properties.MatchEntry === 0) {
-          this.matchFirst(e)
-        }
-        if (this.properties.MatchEntry === 1) {
-          this.matchComplete(e)
+          for (let i = 0; i < this.tempArray.length; i++) {
+            if (this.tempArray[i][0][0] === this.textareaRef.value[0]) {
+              this.textareaRef.value = this.tempArray[i][0]
+              this.updateDataModel({
+                propertyName: 'Text',
+                value: this.tempArray[i][0]
+              })
+              break
+            }
+          }
+          this.textareaRef.setSelectionRange(
+            0,
+            this.textareaRef.value.length,
+            'forward'
+          )
         }
       } else {
         this.tempArray = []
@@ -1988,31 +1668,27 @@ export default class FDComboBox extends Mixins(FdControlVue) {
    * @param event its of FocusEvent
    * @event click
    */
-  // handleClick (
-  //   event: TextEvent,
-  //   textareaRef: HTMLTextAreaElement,
-  //   hideSelectionDiv: HTMLDivElement
-  // ) {
-  //   this.selStart = this.textareaRef.selectionStart
-  //   this.selEnd = this.textareaRef.selectionEnd
-  //   this.curEnd = 1
-  //   debugger
-  //   if (this.isOpenForStyleProp && this.properties.Style === 1) {
-  //     this.open = !this.open
-  //   }
-  //   if (!this.properties.HideSelection) {
-  //     hideSelectionDiv.style.display = 'none'
-  //   } else {
-  //     return undefined
-  //   }
-  //   if (this.properties.EnterFieldBehavior === 0) {
-  //     this.textareaRef.focus()
-  //     this.textareaRef.select()
-  //   } else if (this.properties.EnterFieldBehavior === 1) {
-  //   } else {
-  //     return undefined
-  //   }
-  // }
+  handleClick (
+    event: TextEvent,
+    textareaRef: HTMLTextAreaElement,
+    hideSelectionDiv: HTMLDivElement
+  ) {
+    if (this.isOpenForStyleProp && this.properties.Style === 1) {
+      this.open = !this.open
+    }
+    // if (!this.properties.HideSelection) {
+    //   hideSelectionDiv.style.display = 'none'
+    // } else {
+    //   return undefined
+    // }
+    if (this.isRunMode) {
+      if (this.properties.EnterFieldBehavior === 0) {
+        this.textareaRef.focus()
+        this.textareaRef.select()
+      } else if (this.properties.EnterFieldBehavior === 1) {
+      }
+    }
+  }
   /**
    * @description hides div instead of textarea when hideSelection is false
    * when hideSelection properties is true textarea is shown
@@ -2275,7 +1951,8 @@ export default class FDComboBox extends Mixins(FdControlVue) {
       display = controlProp.Width === 0 || controlProp.Height === 0 ? 'none' : 'block'
     }
     return {
-      display: display
+      display: display,
+      zIndex: this.isEditMode ? (this.getHighestZIndex !== -1) ? this.getHighestZIndex + 1 + '' : this.extraDatas.zIndex! <= 0 ? '' : this.extraDatas.zIndex! + '' : ''
     }
   }
   protected get tdStyleObj (): Partial<CSSStyleDeclaration> {
@@ -2347,13 +2024,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     this.updateColumns()
   }
 
-  @Watch('data.extraDatas.zIndex')
-  setLocalZIndex () {
-    this.controlZIndex = this.data.extraDatas!.zIndex!
-  }
-
   mounted () {
-    this.controlZIndex = this.data.extraDatas!.zIndex!
     this.$el.focus({
       preventScroll: true
     })
@@ -2514,7 +2185,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
       cursor: this.controlCursor,
       position: 'absolute',
       top: `${controlProp.Height! + 1}px`,
-      zIndex: '999'
+      zIndex: '9999999999999'
     }
   }
 
@@ -2549,7 +2220,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
     }
   }
   enabledCheck (e: MouseEvent) {
-    if (this.isRunMode || this.isActivated || this.isEditMode) {
+    if (this.isRunMode || this.isEditMode) {
       if (this.open) {
         this.open = false
         this.textareaRef.focus()
@@ -2625,7 +2296,7 @@ export default class FDComboBox extends Mixins(FdControlVue) {
   border-right: 1px solid black;
 }
 .item:hover {
-  background-color: rgb(59, 122, 231);
+  background-color: #0380fc;
   color: white;
   border: 1px dotted black;
 }
@@ -2658,22 +2329,10 @@ export default class FDComboBox extends Mixins(FdControlVue) {
 }
 .tr {
   outline: none;
-  background-color: '';
-  color: '';
   display: inline-flex;
 }
-/* .tr:hover:not([disabled]) {
+.tr:hover:not([disabled]) {
   background-color: rgb(59, 122, 231);
-} */
- .active {
-  outline: none;
-  background-color: '';
-  color: '';
-  display: inline-flex;
-}
-.active:hover{
-  background-color: rgb(59, 122, 231);
-  color:#FFF;
 }
 .ul {
   display: grid;

@@ -65,14 +65,14 @@ import FDEditableText from '@/FormDesigner/components/atoms/FDEditableText/index
   }
 })
 export default class FDCheckBox extends Mixins(FdControlVue) {
-  @Ref('componentRef') componentRef: HTMLDivElement
+  @Ref('componentRef') componentRef!: HTMLDivElement
   @Ref('checkboxInput') checkboxInput!: HTMLInputElement;
   @Ref('spanRef') spanRef!: HTMLSpanElement;
   @Ref('textSpanRef') textSpanRef!: HTMLDivElement;
-  @Ref('imageRef') imageRef: HTMLImageElement
-  @Ref('logoRef') logoRef : HTMLDivElement
+  @Ref('imageRef') imageRef!: HTMLImageElement
+  @Ref('logoRef') logoRef! : HTMLDivElement
   @Ref('editableTextRef') editableTextRef!: FDEditableText
-  $el: HTMLDivElement
+  $el!: HTMLDivElement
   alignItem: boolean = false
 
   get getCheckStyle () {

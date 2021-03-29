@@ -1,5 +1,5 @@
 <template>
-  <div class="inner-userform-window" :style="innerWindowStyle">
+  <div class="inner-userform-window" :style="innerWindowStyle" @mousedown="updateSelected">
     <div class="inner-userform-header">
       <div class="innerWindowHeaderStyle" :style="innerWindowHeaderStyle">
           {{ properties.Caption }}
@@ -228,6 +228,21 @@ export default class UserForm extends FdContainerVue {
   }
   addContainerControl (event: MouseEvent) {
     this.addControlObj(event, this.controlId)
+  }
+  updateSelected (event: MouseEvent) {
+    if (this.containerRef.isPropChanged) {
+      this.containerRef.isUserFormSelected = true
+      this.containerRef.mouseDownContainer = this.controlId
+    }
+    if (this.containerRef.isPropChanged !== true) {
+      this.selectControl({
+        userFormId: this.userFormId,
+        select: {
+          container: [this.userFormId],
+          selected: [this.userFormId]
+        }
+      })
+    }
   }
 }
 </script>

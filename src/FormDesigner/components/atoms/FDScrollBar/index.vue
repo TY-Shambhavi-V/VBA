@@ -25,6 +25,7 @@
           :style="svgLeftRightStyleObj"
         />
       </button>
+      <div class="outer-slider" @click="isEditMode?outerSliderClicked($event):''">
       <input
         :disabled="getDisableValue"
         type="range"
@@ -35,8 +36,10 @@
         :style="inputStyleObj"
         @input="updateValueProperty"
         orient="vertical"
+        ref="sliderRef"
         @mouseover="updateMouseCursor"
       />
+      </div>
       <button :style="scrollBarButtonStyleObj"
       @mouseover="updateMouseCursor"
       @mousedown="!getDisableValue?properties.Min > properties.Max ? decreaseTheValue() : increaseTheValue():''"
@@ -56,7 +59,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Emit, Mixins, Watch } from 'vue-property-decorator'
+import { Component, Emit, Mixins, Ref, Watch } from 'vue-property-decorator'
 import FdControlVue from '@/api/abstract/FormDesigner/FdControlVue'
 import FdSvgImage from '@/FormDesigner/components/atoms/FDSVGImage/index.vue'
 import { controlProperties } from '@/FormDesigner/controls-properties'
@@ -68,11 +71,13 @@ import { controlProperties } from '@/FormDesigner/controls-properties'
   }
 })
 export default class FDScrollBar extends Mixins(FdControlVue) {
-  $el: HTMLDivElement
+  $el!: HTMLDivElement
   isInvert: boolean = false
   intervalVariable: number = 0
   thumbHeight: string = ''
   minHeight: string = ''
+  currentThumbLeft: number = 0
+  @Ref('sliderRef') sliderRef!: HTMLInputElement
   updateValueProperty (e: Event) {
     if (e.target instanceof HTMLInputElement) {
       const targetValue = parseInt(e.target!.value)
@@ -117,6 +122,40 @@ export default class FDScrollBar extends Mixins(FdControlVue) {
     }
   }
 
+  calculateThumbLeftPosition () {
+    const controlProp = this.properties
+    const val = parseInt(controlProp.Value!.toString())
+    const min = controlProp.Min ? controlProp.Min : 0
+    const max = controlProp.Max ? controlProp.Max : 100
+    const newVal = Number(((val - min) * 100) / (max - min))
+    const leftValue = this.checkOtherOrientations() ? (this.properties.Height! - 40) * (newVal / 100) : (this.properties.Width! - 40) * (newVal / 100)
+    this.currentThumbLeft = leftValue
+  }
+
+  outerSliderClicked (e: MouseEvent) {
+    if (e.target instanceof HTMLDivElement) {
+      this.isLargeChange = true
+      const leftValue:number = this.currentThumbLeft
+      if (leftValue < e.offsetX) {
+        if (!this.getDisableValue) {
+          if (this.properties.Min! > this.properties.Max!) {
+            this.decreaseTheValueOfControl()
+          } else {
+            this.increaseTheValueOfControl()
+          }
+        }
+      } else {
+        if (!this.getDisableValue) {
+          if (this.properties.Min! > this.properties.Max!) {
+            this.increaseTheValueOfControl()
+          } else {
+            this.decreaseTheValueOfControl()
+          }
+        }
+      }
+    }
+  }
+
   gridTemplateColumnsCalculate () {
     const controlProp = this.properties
     if (this.checkOtherOrientations()) {
@@ -150,6 +189,7 @@ export default class FDScrollBar extends Mixins(FdControlVue) {
         this.thumbHeight = ((z / 2) - ((this.properties.Max! - this.properties.LargeChange!) / this.properties.Max!) * (z / 2)) + 'px'
         this.minHeight = '15px'
       } else if (this.properties.LargeChange! === 0) {
+        this.minHeight = '25px'
         this.thumbHeight = '25px'
       } else {
         this.thumbHeight = '0px'
@@ -229,9 +269,18 @@ export default class FDScrollBar extends Mixins(FdControlVue) {
   get inputStyleObj () {
     const controlProp = this.properties
     let a = null
+    let c:Array<number> = []
     let temprgba
-    if (controlProp.BackColor!!.startsWith('rgb')) {
+    if (controlProp.BackColor!.startsWith('rgba')) {
       a = controlProp.BackColor!.split('rgba(')[1].split(',')
+    a!.forEach(element => {
+      c.push(parseInt(element))
+    })
+    } else if (controlProp.BackColor!.startsWith('rgb')) {
+      a = controlProp.BackColor!.split('rgb(')[1].split(',')
+    a!.forEach(element => {
+      c.push(parseInt(element))
+    })
     } else {
       temprgba = this.hexToRgbA(controlProp.BackColor!)
     }
@@ -240,7 +289,7 @@ export default class FDScrollBar extends Mixins(FdControlVue) {
       width: this.checkOtherOrientations() ? `${controlProp.Height! - 40}px` : `${controlProp.Width! - 40}px`,
       height: this.checkOtherOrientations() ? `${controlProp.Width!}px` : `${controlProp.Height!}px`,
       cursor: this.controlCursor,
-      backgroundColor: controlProp.BackColor!.startsWith('rgb') ? `rgba(${a![0]},${a![1]},${a![2]},0.5)` : temprgba,
+      backgroundColor: controlProp.BackColor!.startsWith('rgb') ? `rgba(${c![0]},${c![1]},${c![2]},0.5)` : temprgba,
       margin: '0px'
     }
   }
@@ -309,12 +358,17 @@ export default class FDScrollBar extends Mixins(FdControlVue) {
   heightValidate () {
     this.thumbValidate()
   }
+  @Watch('properties.Value')
+  setThumbLeftValue () {
+    this.calculateThumbLeftPosition()
+  }
 
   mounted () {
     this.$el.focus({
       preventScroll: true
     })
     this.thumbValidate()
+    this.calculateThumbLeftPosition()
   }
 
   /**

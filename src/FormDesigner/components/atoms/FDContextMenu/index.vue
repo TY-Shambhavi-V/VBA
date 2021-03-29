@@ -102,18 +102,18 @@ import FDCommonMethod from '@/api/abstract/FormDesigner/FDCommonMethod'
   }
 })
 export default class ContextMenu extends FDCommonMethod {
-  @Prop() values: Array<IControlContextMenu>;
-  @Prop() userFormId: string;
-  @Prop() containerId: string;
-  @Prop() keyEventName: string;
-  @Prop() controlId: string;
-  @Prop() selectedTab: number;
-  @Prop() data: controlData;
-  @Prop() groupStyleArray: Array<IGroupStyle>
-  @Prop() contextMenutype: string
-  @Prop() editTextRef: HTMLSpanElement | HTMLTextAreaElement
-  @Prop() copiedText: string
-  @Prop() textMenu: boolean
+  @Prop() values!: Array<IControlContextMenu>;
+  @Prop() userFormId!: string;
+  @Prop() containerId!: string;
+  @Prop() keyEventName!: string;
+  @Prop() controlId!: string;
+  @Prop() selectedTab!: number;
+  @Prop() data: controlData | undefined;
+  @Prop() groupStyleArray!: Array<IGroupStyle>
+  @Prop() contextMenutype!: string
+  @Prop() editTextRef!: HTMLSpanElement | HTMLTextAreaElement
+  @Prop() copiedText!: string
+  @Prop() textMenu!: boolean
 
   @State((state) => state.fd.selectedControls)
   selectedControls!: fdState['selectedControls'];
@@ -227,11 +227,22 @@ export default class ContextMenu extends FDCommonMethod {
   pasteText (event: MouseEvent) {
     const controlType = this.userformData[this.userFormId][this.controlId].type
     const position = this.getCursorPos(event)
-    const length = position.endPosition - position.startPosition
-    let baseValue = this.editTextRef.innerText.split('')
-    baseValue.splice(position.startPosition, length)
-    const updateValue = baseValue.slice(0, position.startPosition).join('') + this.copiedText + baseValue.slice(position.startPosition).join('')
-    EventBus.$emit('updateText', updateValue)
+    if (controlType === 'ComboBox' || controlType === 'TextBox') {
+      if (this.editTextRef instanceof HTMLTextAreaElement) {
+        const length = this.editTextRef.selectionEnd - this.editTextRef.selectionStart
+        let baseValue = this.editTextRef.value.split('')
+        baseValue.splice(this.editTextRef.selectionStart, length)
+        const updateValue = baseValue.slice(0, this.editTextRef.selectionStart).join('') + this.copiedText + baseValue.slice(this.editTextRef.selectionStart).join('')
+        this.editTextRef.value = updateValue
+        this.editTextRef.dispatchEvent(new KeyboardEvent('input'))
+      }
+    } else {
+      const length = position.endPosition - position.startPosition
+      let baseValue = this.editTextRef.innerText.split('')
+      baseValue.splice(position.startPosition, length)
+      const updateValue = baseValue.slice(0, position.startPosition).join('') + this.copiedText + baseValue.slice(position.startPosition).join('')
+      EventBus.$emit('updateText', updateValue)
+    }
   }
   getCursorPos (event: MouseEvent) {
     let startPosition = 0

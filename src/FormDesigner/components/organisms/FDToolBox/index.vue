@@ -45,22 +45,9 @@ import { Component, Vue, Prop, Watch, Ref } from 'vue-property-decorator'
 import { State, Action } from 'vuex-class'
 import UseSvgImage from '../../atoms/FDSVGImage/index.vue'
 import { IchangeToolBoxSelect } from '../../../../storeModules/fd/actions'
-import { Payload } from 'vuex'
 interface IToolbox {
   name: string;
   icon: string;
-}
-interface IRef {
-  [icons: string]: [];
-}
-interface Istyle {
-  id: string;
-  style: {
-    borderRight: string;
-    borderBottom: string;
-    borderWidth: string;
-    borderStyle: string;
-  };
 }
 @Component({
   name: 'ToolBox',
@@ -71,12 +58,11 @@ interface Istyle {
 export default class ToolBox extends Vue {
   @State((state:rootState) => state.fd.toolBoxSelect) toolBoxSelect!: fdState['toolBoxSelect']
   @Action('fd/changeToolBoxSelect') changeToolBoxSelect!: (payload: IchangeToolBoxSelect) => void
-  @Ref('icons') icons: HTMLDivElement[]
+  @Ref('icons') icons!: HTMLDivElement[]
 
   toolBox: Array<IToolbox> = toolBox;
   zIndexChange: number = 0;
   mounted () {
-    // this.selectedControl(toolBox[0].name)
     this.changeToolBoxSelect(toolBox[0].name)
   }
 

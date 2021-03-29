@@ -1,6 +1,6 @@
 import { Component, Emit, Prop, Vue } from 'vue-property-decorator'
 import { Action, State } from 'vuex-class'
-import { IupdateControl, IupdateControlExtraData } from '@/storeModules/fd/actions'
+import { IselectControl, IupdateControl, IupdateControlExtraData } from '@/storeModules/fd/actions'
 import { EventBus } from '@/FormDesigner/event-bus'
 
 @Component({
@@ -12,11 +12,13 @@ export default class FDCommonMethod extends Vue {
   @State((state) => state.fd.selectedControls) selectedControls!: fdState['selectedControls'];
   @Action('fd/updateControl') updateControl!: (payload: IupdateControl) => void;
   @Action('fd/updateControlExtraData') updateControlExtraData!: (payload: IupdateControlExtraData) => void;
+  @Action('fd/selectControl') selectControl!: (payload: IselectControl) => void;
   isPropChanged: boolean = false
-  mouseDownEvent: MouseEvent
+  mouseDownEvent!: MouseEvent
   isDargMouseDown: boolean = false
   mouseDownContainer: string = ''
   isControlMouseDown: boolean = false
+  isUserFormSelected: boolean = false
 
   getLowestIndex (tempControls: string[], controlLength: number, propertyType: boolean) {
     let lastControlId = controlLength
@@ -224,6 +226,17 @@ export default class FDCommonMethod extends Vue {
       this.isPropChanged = false
       this.isControlMouseDown = false
       EventBus.$emit('conSelMouseDown', this.mouseDownEvent, this.mouseDownContainer)
+    }
+    if (this.isPropChanged !== true && this.isUserFormSelected) {
+      this.isPropChanged = false
+      this.isUserFormSelected = false
+      this.selectControl({
+        userFormId: this.userFormId,
+        select: {
+          container: [this.mouseDownContainer],
+          selected: [this.mouseDownContainer]
+        }
+      })
     }
   }
 

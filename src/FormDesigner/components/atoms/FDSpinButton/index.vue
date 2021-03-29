@@ -130,7 +130,7 @@ export default class FDSpinButton extends Mixins(FdControlVue) {
   classStyle: string = 'spin';
   orientedValue: boolean = true;
   svgWidth: number = 0;
-  $el: HTMLDivElement
+  $el!: HTMLDivElement
   get svgStyleObj () {
     const controlProp = this.properties
     return {

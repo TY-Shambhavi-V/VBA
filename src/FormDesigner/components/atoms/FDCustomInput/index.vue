@@ -46,7 +46,7 @@ import { Component, Vue, Prop, Emit, Ref } from 'vue-property-decorator'
 export default class FDCustomInput extends Vue {
   @Prop() propertyData! : tableData
   @Ref('fileInputRef') fileInputRef!: HTMLInputElement;
-  @Prop({ required: false }) isPropChanged: boolean
+  @Prop({ required: false }) isPropChanged!: boolean
 
   @Prop({ default: 'default' }) propertyName!: string
 

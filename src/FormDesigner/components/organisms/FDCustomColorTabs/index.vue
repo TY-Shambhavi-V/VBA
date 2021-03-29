@@ -16,10 +16,10 @@ import ColorPalettes from '../../organisms/FDColorPalettes/index.vue'
   components: { ColorPalettes }
 })
 export default class CustomColorTabs extends Vue {
-  @Prop() name: string;
-  @Prop() data: object;
+  @Prop() name!: string
+  @Prop() data!: object
 
-  @Prop({ }) propertyData: tableData
+  @Prop({ }) propertyData!: tableData
   @Prop({ default: 'default' }) propertyName!: string
 
   get propertyValue () {

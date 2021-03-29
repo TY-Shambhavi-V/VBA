@@ -73,15 +73,15 @@ import FdDialogDragVue from '@/api/abstract/FormDesigner/FdDialogDragVue'
   name: 'FDRenameMultiPageDialog'
 })
 export default class FDRenameMultiPageDialog extends Mixins(FdDialogDragVue) {
-  userFormId: string;
-  controlId: string;
+  userFormId: string = '';
+  controlId: string = '';
   @Action('fd/updateControlExtraData') updateControlExtraData!: (
     payload: IupdateControlExtraData
   ) => void;
   @Action('fd/updateControl') updateControl!: (payload: IupdateControl) => void;
   @State((state) => state.fd.userformData) userformData!: userformData;
   @Ref('renameDialogRef') renameDialogRef!: HTMLDivElement;
-  tabOrderList: tabsItems[];
+  tabOrderList!: tabsItems[];
   selectedTabData: tabsItems = {
     Name: '',
     Caption: '',
