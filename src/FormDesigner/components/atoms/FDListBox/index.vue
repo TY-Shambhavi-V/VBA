@@ -42,10 +42,12 @@
           ref="listStyleRef"
           v-for="(item, index) of extraDatas.RowSourceData"
           :key="index"
-          @mouseenter.stop="!isMoving && handleDrag($event)"
+          @mouseenter.stop="
+            isRunMode || (isEditMode && !isMoving) ? handleDrag($event) : ''"
           @keydown.esc="releaseEditMode"
           @blur.stop="clearMatchEntry"
-          @keydown.stop="handleExtendArrowKeySelect"
+          @keydown.stop="
+            isRunMode || (isEditMode && !isMoving) ? handleExtendArrowKeySelect : ''"
           @mousedown="
             isRunMode || (isEditMode && !isMoving) ? handleMousedown($event) : '',
             isRunMode || (isEditMode && !isMoving) ? captureTarget($event) : ''"
@@ -842,83 +844,85 @@ export default class FDListBox extends Mixins(FdControlVue) {
                 }
               }
             } else {
-              if (this.properties.MultiSelect === 0) {
-                this.clearOptionBGColorAndChecked(e)
-                this.setOptionBGColorAndChecked(e)
-              } else if (this.properties.MultiSelect === 1) {
-                this.setOptionBGColorAndChecked(e)
-              } else if (this.properties.MultiSelect === 2) {
-                if (e.ctrlKey === true) {
-                  if (targetElement.tagName === 'INPUT' || targetElement.tagName === 'DIV') {
-                    if (targetElement.style.backgroundColor === 'rgb(59, 122, 231)') {
-                      this.unselectBGColorAndchecked(e)
+              if (!this.isRunMode) {
+                if (this.properties.MultiSelect === 0) {
+                  this.clearOptionBGColorAndChecked(e)
+                  this.setOptionBGColorAndChecked(e)
+                } else if (this.properties.MultiSelect === 1) {
+                  this.setOptionBGColorAndChecked(e)
+                } else if (this.properties.MultiSelect === 2) {
+                  if (e.ctrlKey === true) {
+                    if (targetElement.tagName === 'INPUT' || targetElement.tagName === 'DIV') {
+                      if (targetElement.style.backgroundColor === 'rgb(59, 122, 231)') {
+                        this.unselectBGColorAndchecked(e)
+                      } else {
+                        this.setOptionBGColorAndChecked(e)
+                      }
                     } else {
                       this.setOptionBGColorAndChecked(e)
                     }
-                  } else {
-                    this.setOptionBGColorAndChecked(e)
-                  }
-                  this.ctrlFlag = true
-                } else if (e.shiftKey === true) {
-                  let startPoint = 0
-                  let endPoint = 0
-                  const pNode = this.previousNode.parentElement as HTMLDivElement
-                  const tNode = targetElement.parentElement as HTMLDivElement
-                  for (let i = 0; i < tempPath.length; i++) {
-                    const ele = tempPath[i] as HTMLDivElement
-                    if (ele.className === 'table-body') {
+                    this.ctrlFlag = true
+                  } else if (e.shiftKey === true) {
+                    let startPoint = 0
+                    let endPoint = 0
+                    const pNode = this.previousNode.parentElement as HTMLDivElement
+                    const tNode = targetElement.parentElement as HTMLDivElement
+                    for (let i = 0; i < tempPath.length; i++) {
+                      const ele = tempPath[i] as HTMLDivElement
+                      if (ele.className === 'table-body') {
                       // extend points start and end
-                      if (this.previousPoints[0] === 999) {
-                        startPoint = pNode.tabIndex
-                      } else {
-                        startPoint = this.previousPoints[0]
-                      }
-                      endPoint = tNode.tabIndex
-                      this.previousPoints[0] = startPoint
-                      this.previousPoints[1] = endPoint
-                      // Selected using ctrl key and using shift key
-                      if (this.ctrlFlag) {
-                        startPoint = pNode.tabIndex
-                        endPoint = tNode.tabIndex
-                        this.ctrlFlag = false
-                      }
-                      // upward selection start and end swap
-                      if (startPoint > endPoint) {
-                        let temp = startPoint
-                        startPoint = endPoint
-                        endPoint = temp
-                      }
-                      // setting selection
-                      this.clearOptionBGColorAndChecked(e)
-                      for (let k = startPoint; k <= endPoint; k++) {
-                        const node = ele.childNodes[k] as HTMLDivElement
-                        const tempNode = node.childNodes[0]
-                          .childNodes[0] as HTMLInputElement
-                        node.style.backgroundColor = 'rgb(59, 122, 231)'
-                        if (this.properties.ListStyle === 1 && !tempNode.checked) {
-                          tempNode.checked = !tempNode.checked
+                        if (this.previousPoints[0] === 999) {
+                          startPoint = pNode.tabIndex
+                        } else {
+                          startPoint = this.previousPoints[0]
                         }
+                        endPoint = tNode.tabIndex
+                        this.previousPoints[0] = startPoint
+                        this.previousPoints[1] = endPoint
+                        // Selected using ctrl key and using shift key
+                        if (this.ctrlFlag) {
+                          startPoint = pNode.tabIndex
+                          endPoint = tNode.tabIndex
+                          this.ctrlFlag = false
+                        }
+                        // upward selection start and end swap
+                        if (startPoint > endPoint) {
+                          let temp = startPoint
+                          startPoint = endPoint
+                          endPoint = temp
+                        }
+                        // setting selection
+                        this.clearOptionBGColorAndChecked(e)
+                        for (let k = startPoint; k <= endPoint; k++) {
+                          const node = ele.childNodes[k] as HTMLDivElement
+                          const tempNode = node.childNodes[0]
+                            .childNodes[0] as HTMLInputElement
+                          node.style.backgroundColor = 'rgb(59, 122, 231)'
+                          if (this.properties.ListStyle === 1 && !tempNode.checked) {
+                            tempNode.checked = !tempNode.checked
+                          }
+                        }
+                        break
                       }
-                      break
                     }
+                  } else {
+                    this.clearOptionBGColorAndChecked(e)
+                    this.setOptionBGColorAndChecked(e)
+                    this.previousPoints = [999, 999]
                   }
-                } else {
-                  this.clearOptionBGColorAndChecked(e)
-                  this.setOptionBGColorAndChecked(e)
-                  this.previousPoints = [999, 999]
-                }
 
-                if (this.properties.ControlSource !== '') {
-                  if (this.properties.TextColumn === -1) {
+                  if (this.properties.ControlSource !== '') {
+                    if (this.properties.TextColumn === -1) {
+                      this.updateDataModel({
+                        propertyName: 'Text',
+                        value: this.selectionData[0]
+                      })
+                    }
                     this.updateDataModel({
-                      propertyName: 'Text',
+                      propertyName: 'Value',
                       value: this.selectionData[0]
                     })
                   }
-                  this.updateDataModel({
-                    propertyName: 'Value',
-                    value: this.selectionData[0]
-                  })
                 }
               }
             }
@@ -985,7 +989,7 @@ export default class FDListBox extends Mixins(FdControlVue) {
           for (let j = 0; j < this.listStyleRef[i].children.length; j++) {
             const a = this.listStyleRef[i].children[j] as HTMLDivElement
             a.style.backgroundColor = ''
-            a.style.color = 'black'
+            a.style.color = ''
           }
         }
       }

@@ -751,17 +751,15 @@ export default class FdControlVue extends Vue {
       this.updateDataModel({ propertyName: 'Value', value: newVal })
     }
   }
- @Watch('properties.ListStyle', { deep: true })
+  @Watch('properties.ListStyle', { deep: true })
  clearSelectedArray () {
-   debugger
    this.selectedItems = []
  }
 
- @Watch('properties.MultiSelect', { deep: true })
- clearSelection () {
-   debugger
-   this.selectedItems = []
- }
+  @Watch('properties.MultiSelect', { deep: true })
+  clearSelection () {
+    this.selectedItems = []
+  }
 
  /**
   * @description watches text and value properties are same when component is mounted/changed
@@ -770,36 +768,36 @@ export default class FdControlVue extends Vue {
   * @param newVal  new/changed properties data
   */
  @Watch('properties.Value', { deep: true })
- textAndValueUpdateProp (newVal:string, oldVal:string) {
-   if (this.data.type!.includes('TextBox')) {
-     const propData: controlProperties = this.properties
-     if (propData.Text !== propData.Value && propData.ControlSource === '') {
-       const propText: number = propData.Text!.length
-       const propValue: number = (propData.Value as string).length
-       this.updateDataModel({ propertyName: 'Text',
-         value: this.properties.Value! })
-     }
-   } else if (this.data.type!.includes('CheckBox') || this.data.type!.includes('OptionButton')) {
-     const value = this.properties.Value
-     const valueType:boolean | string = typeof value
-     let isBoolean:boolean | string = ''
-     if (valueType === 'boolean') {
-       isBoolean = (value as boolean)
-     } else if (valueType === 'string') {
-       isBoolean = ((value as string).toLowerCase() === 'true') ? true : ((value as string).toLowerCase() === 'false') ? false : ''
-     }
-     const ref = this.data.type!.includes('CheckBox') ? this.checkboxRef : this.optionBtnRef
-     if (isBoolean !== '') {
-       if (isBoolean) {
-         this.setStyle((ref as HTMLInputElement), (isBoolean as boolean), !(isBoolean as boolean), 'white')
-       } else {
-         this.setStyle((ref as HTMLInputElement), false, false, 'white')
-       }
-     } else {
-       this.setStyle((ref as HTMLInputElement), true, true, 'rgba(220, 220, 220, 1)')
-     }
-   }
- }
+  textAndValueUpdateProp (newVal:string, oldVal:string) {
+    if (this.data.type!.includes('TextBox')) {
+      const propData: controlProperties = this.properties
+      if (propData.Text !== propData.Value && propData.ControlSource === '') {
+        const propText: number = propData.Text!.length
+        const propValue: number = (propData.Value as string).length
+        this.updateDataModel({ propertyName: 'Text',
+          value: this.properties.Value! })
+      }
+    } else if (this.data.type!.includes('CheckBox') || this.data.type!.includes('OptionButton')) {
+      const value = this.properties.Value
+      const valueType:boolean | string = typeof value
+      let isBoolean:boolean | string = ''
+      if (valueType === 'boolean') {
+        isBoolean = (value as boolean)
+      } else if (valueType === 'string') {
+        isBoolean = ((value as string).toLowerCase() === 'true') ? true : ((value as string).toLowerCase() === 'false') ? false : ''
+      }
+      const ref = this.data.type!.includes('CheckBox') ? this.checkboxRef : this.optionBtnRef
+      if (isBoolean !== '') {
+        if (isBoolean) {
+          this.setStyle((ref as HTMLInputElement), (isBoolean as boolean), !(isBoolean as boolean), 'white')
+        } else {
+          this.setStyle((ref as HTMLInputElement), false, false, 'white')
+        }
+      } else {
+        this.setStyle((ref as HTMLInputElement), true, true, 'rgba(220, 220, 220, 1)')
+      }
+    }
+  }
 
  /**
   * @description changing width and height of textarea tag by replicating style of
@@ -1093,177 +1091,327 @@ handleMultiSelect (e: MouseEvent) {
  *
  */
 handleExtendArrowKeySelect (e: KeyboardEvent) {
-  const x = e.key.toUpperCase().charCodeAt(0)
-  const tempPath = e.composedPath()
-  const eventTarget = e.target as HTMLTableRowElement
-  const nextSiblingEvent = eventTarget.nextSibling as HTMLDivElement
-  const prevSiblingEvent = eventTarget.previousSibling as HTMLDivElement
-  if (
+  if ((this.isRunMode && !this.properties.Locked && this.properties.Enabled) || !this.isRunMode) {
+    const x = e.key.toUpperCase().charCodeAt(0)
+    const tempPath = e.composedPath()
+    const eventTarget = e.target as HTMLTableRowElement
+    const nextSiblingEvent = eventTarget.nextSibling as HTMLDivElement
+    const prevSiblingEvent = eventTarget.previousSibling as HTMLDivElement
+    if (
   this.properties.MatchEntry! === 0 &&
   x >= 48 && x <= 90
-  ) {
-    this.matchEntry = []
-    const prevMatchData =
+    ) {
+      this.matchEntry = []
+      const prevMatchData =
   this.extraDatas.MatchData === '' ? e.key : this.extraDatas.MatchData
-    this.updateDataModelExtraData({ propertyName: 'MatchData', value: prevMatchData !== e.key ? e.key : prevMatchData })
+      this.updateDataModelExtraData({ propertyName: 'MatchData', value: prevMatchData !== e.key ? e.key : prevMatchData })
 
-    for (let index = 0; index < tempPath.length; index++) {
-      const element = tempPath[index] as HTMLDivElement
-      if (element.className === 'table-body') {
-        for (let index = 0; index < element.childNodes.length; index++) {
-          const ei = element.childNodes[index] as HTMLDivElement
-          let splitData = ei.innerText.replace(/\t/g, ' ').split(' ')
-          let si = 0
-          // if (this.properties.ListStyle === 0) {
-          //   si = -1
-          // }
-          si = -1
-          if (splitData[si + 1][0].includes(this.extraDatas.MatchData!)) {
-            this.matchEntry.push(index)
+      for (let index = 0; index < tempPath.length; index++) {
+        const element = tempPath[index] as HTMLDivElement
+        if (element.className === 'table-body') {
+          for (let index = 0; index < element.childNodes.length; index++) {
+            const ei = element.childNodes[index] as HTMLDivElement
+            let splitData = ei.innerText.replace(/\t/g, ' ').split(' ')
+            let si = 0
+            // if (this.properties.ListStyle === 0) {
+            //   si = -1
+            // }
+            si = -1
+            if (splitData[si + 1][0].includes(this.extraDatas.MatchData!)) {
+              this.matchEntry.push(index)
+            }
           }
-        }
 
-        if (
+          if (
         this.extraDatas.MatchData![0] !== undefined &&
         this.extraDatas.MatchData![0] === e.key &&
         this.extraDatas.MatchData!.length > 0
-        ) {
-          const tempChildNode = element.childNodes[this.matchEntry[this.matchIndex]] as HTMLDivElement
-          this.matchIndex++
-          if (
-            this.matchIndex === this.matchEntry.length &&
+          ) {
+            const tempChildNode = element.childNodes[this.matchEntry[this.matchIndex]] as HTMLDivElement
+            this.matchIndex++
+            if (
+              this.matchIndex === this.matchEntry.length &&
           prevMatchData === this.extraDatas.MatchData
-          ) {
-            this.matchIndex = 0
-            this.clearOptionBGColorAndChecked(e)
-            this.setBGandCheckedForMatch(
-              tempChildNode
-            )
-            this.selectChildren(e)
-            break
-          } else if (prevMatchData !== this.extraDatas.MatchData) {
-            this.matchIndex = 0
-            this.clearOptionBGColorAndChecked(e)
-            this.setBGandCheckedForMatch(
-              tempChildNode
-            )
-            this.selectChildren(e)
-            break
-          } else {
-            if (this.matchEntry.length === 0) {
-              this.matchEntry.push(0)
+            ) {
               this.matchIndex = 0
-            }
-            this.clearOptionBGColorAndChecked(e)
-            this.setBGandCheckedForMatch(
-              tempChildNode
-            )
-            this.selectChildren(e)
-            break
-          }
-        }
-        break
-      }
-    }
-  } else if (
-    this.properties.MatchEntry === 1 &&
-  x >= 48 && x <= 90
-  ) {
-    let temp = this.extraDatas.MatchData + e.key
-    this.updateDataModelExtraData({ propertyName: 'MatchData', value: temp })
-
-    for (let point = 0; point < tempPath.length; point++) {
-      const tbody = tempPath[point] as HTMLDivElement
-      if (tbody.className === 'table-body') {
-        this.matchEntry = []
-        for (let p = 0; p < tbody.childNodes.length; p++) {
-          const ei = tbody.childNodes[p] as HTMLDivElement
-          let matchEntryComplete = ei.innerText
-            .replace(/\t/g, ' ')
-            .split(' ')
-          let sii = 0
-          // if (this.properties.ListStyle === 0) {
-          //   sii = -1
-          // }
-          sii = -1
-          if (
-            matchEntryComplete[sii + 1][0].includes(this.extraDatas.MatchData!) &&
-          this.extraDatas.MatchData!.length < 2
-          ) {
-            this.matchEntry.push(p)
-          } else if (
-            matchEntryComplete[sii + 1].includes(this.extraDatas.MatchData!) &&
-          this.extraDatas.MatchData!.length > 1
-          ) {
-            this.matchEntry.push(p)
-          }
-        }
-
-        if (this.extraDatas.MatchData!.length <= 1) {
-          let singleMatch = tbody.childNodes[this.matchEntry[0]] as HTMLDivElement
-          this.clearOptionBGColorAndChecked(e)
-          this.setBGandCheckedForMatch(singleMatch)
-          this.selectChildren(e)
-          break
-        } else if (
-        this.extraDatas.MatchData!.length > 1 &&
-        this.matchEntry.length !== 0
-        ) {
-          let completeAutoMatch = tbody.childNodes[this.matchEntry[0]] as HTMLDivElement
-          this.clearOptionBGColorAndChecked(e)
-          this.setBGandCheckedForMatch(completeAutoMatch)
-          this.selectChildren(e)
-        }
-        break
-      }
-    }
-  }
-  if (e.key === 'ArrowUp') {
-    if (this.properties.MultiSelect === 0 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
-      for (let point = 0; point < tempPath.length; point++) {
-        const element = tempPath[point] as HTMLDivElement
-        if (element.className === 'table-body') {
-          for (let index = 0; index < element.childNodes.length; index++) {
-            const ei = element.childNodes[index] as HTMLDivElement
-            if (ei.style.backgroundColor === 'rgb(59, 122, 231)' && index !== 0) {
               this.clearOptionBGColorAndChecked(e)
-              const ele = element.childNodes[--index] as HTMLDivElement
-              this.setBGandCheckedForMatch(ele)
+              this.setBGandCheckedForMatch(
+                tempChildNode
+              )
               this.selectChildren(e)
-              this.prevNode = ele
-            } else if (index === 0) {
-              this.setBGandCheckedForMatch(ei)
-              this.selectChildren(e)
-              this.prevNode = ei
-            }
-          }
-          this.prevNode.focus()
-          this.arrowMove = 1
-          this.arrowUp = false
-          break
-        }
-      }
-    }
-  } else if (e.key === 'ArrowDown') {
-    if (this.properties.MultiSelect === 0 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
-      for (let point = 0; point < tempPath.length; point++) {
-        const element = tempPath[point] as HTMLDivElement
-        if (element.className === 'table-body') {
-          for (let index = 0; index < element.childNodes.length; index++) {
-            const ei = element.childNodes[index] as HTMLDivElement
-            if (ei.style.backgroundColor === 'rgb(59, 122, 231)') {
+              break
+            } else if (prevMatchData !== this.extraDatas.MatchData) {
+              this.matchIndex = 0
               this.clearOptionBGColorAndChecked(e)
-              if (index === element.childNodes.length - 1) {
-                index = element.childNodes.length - 2
+              this.setBGandCheckedForMatch(
+                tempChildNode
+              )
+              this.selectChildren(e)
+              break
+            } else {
+              if (this.matchEntry.length === 0) {
+                this.matchEntry.push(0)
+                this.matchIndex = 0
               }
-              const ele = element.childNodes[++index] as HTMLDivElement
-              this.setBGandCheckedForMatch(ele)
+              this.clearOptionBGColorAndChecked(e)
+              this.setBGandCheckedForMatch(
+                tempChildNode
+              )
               this.selectChildren(e)
-              this.prevNode = ele
               break
             }
           }
-          this.prevNode.focus()
+          break
+        }
+      }
+    } else if (
+      this.properties.MatchEntry === 1 &&
+  x >= 48 && x <= 90
+    ) {
+      let temp = this.extraDatas.MatchData + e.key
+      this.updateDataModelExtraData({ propertyName: 'MatchData', value: temp })
+
+      for (let point = 0; point < tempPath.length; point++) {
+        const tbody = tempPath[point] as HTMLDivElement
+        if (tbody.className === 'table-body') {
+          this.matchEntry = []
+          for (let p = 0; p < tbody.childNodes.length; p++) {
+            const ei = tbody.childNodes[p] as HTMLDivElement
+            let matchEntryComplete = ei.innerText
+              .replace(/\t/g, ' ')
+              .split(' ')
+            let sii = 0
+            // if (this.properties.ListStyle === 0) {
+            //   sii = -1
+            // }
+            sii = -1
+            if (
+              matchEntryComplete[sii + 1][0].includes(this.extraDatas.MatchData!) &&
+          this.extraDatas.MatchData!.length < 2
+            ) {
+              this.matchEntry.push(p)
+            } else if (
+              matchEntryComplete[sii + 1].includes(this.extraDatas.MatchData!) &&
+          this.extraDatas.MatchData!.length > 1
+            ) {
+              this.matchEntry.push(p)
+            }
+          }
+
+          if (this.extraDatas.MatchData!.length <= 1) {
+            let singleMatch = tbody.childNodes[this.matchEntry[0]] as HTMLDivElement
+            this.clearOptionBGColorAndChecked(e)
+            this.setBGandCheckedForMatch(singleMatch)
+            this.selectChildren(e)
+            break
+          } else if (
+        this.extraDatas.MatchData!.length > 1 &&
+        this.matchEntry.length !== 0
+          ) {
+            let completeAutoMatch = tbody.childNodes[this.matchEntry[0]] as HTMLDivElement
+            this.clearOptionBGColorAndChecked(e)
+            this.setBGandCheckedForMatch(completeAutoMatch)
+            this.selectChildren(e)
+          }
+          break
+        }
+      }
+    }
+    if (e.key === 'ArrowUp') {
+      if (this.properties.MultiSelect === 0 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
+        for (let point = 0; point < tempPath.length; point++) {
+          const element = tempPath[point] as HTMLDivElement
+          if (element.className === 'table-body') {
+            for (let index = 0; index < element.childNodes.length; index++) {
+              const ei = element.childNodes[index] as HTMLDivElement
+              if (ei.style.backgroundColor === 'rgb(59, 122, 231)' && index !== 0) {
+                this.clearOptionBGColorAndChecked(e)
+                const ele = element.childNodes[--index] as HTMLDivElement
+                this.setBGandCheckedForMatch(ele)
+                this.selectChildren(e)
+                this.prevNode = ele
+              } else if (index === 0) {
+                this.setBGandCheckedForMatch(ei)
+                this.selectChildren(e)
+                this.prevNode = ei
+              }
+            }
+            this.prevNode.focus()
+            this.arrowMove = 1
+            this.arrowUp = false
+            break
+          }
+        }
+      }
+    } else if (e.key === 'ArrowDown') {
+      if (this.properties.MultiSelect === 0 || (this.properties.MultiSelect === 2 && !e.shiftKey)) {
+        for (let point = 0; point < tempPath.length; point++) {
+          const element = tempPath[point] as HTMLDivElement
+          if (element.className === 'table-body') {
+            for (let index = 0; index < element.childNodes.length; index++) {
+              const ei = element.childNodes[index] as HTMLDivElement
+              if (ei.style.backgroundColor === 'rgb(59, 122, 231)') {
+                this.clearOptionBGColorAndChecked(e)
+                if (index === element.childNodes.length - 1) {
+                  index = element.childNodes.length - 2
+                }
+                const ele = element.childNodes[++index] as HTMLDivElement
+                this.setBGandCheckedForMatch(ele)
+                this.selectChildren(e)
+                this.prevNode = ele
+                break
+              }
+            }
+            this.prevNode.focus()
+            this.first = 0
+            this.arrowMove = 1
+            this.afterArrow = 1
+            break
+          }
+        }
+      }
+    }
+    if (
+      e.key === 'ArrowDown' &&
+    e.shiftKey === true &&
+    (nextSiblingEvent !== null || prevSiblingEvent.nextSibling !== null)
+    ) {
+      let currentElement: HTMLDivElement
+      if (nextSiblingEvent === null) {
+        currentElement = prevSiblingEvent.nextSibling! as HTMLDivElement
+      } else {
+        currentElement = nextSiblingEvent
+      }
+      if (this.properties.MultiSelect === 2 && eventTarget.nextSibling !== null) {
+        if (eventTarget.style.backgroundColor !== 'rgb(59, 122, 231)') {
+          this.setOptionBGColorAndChecked(e)
+          this.selectChildren(e)
+        } else if (
+          eventTarget.style.backgroundColor === 'rgb(59, 122, 231)' &&
+        currentElement!.style.backgroundColor !== ''
+        ) {
+          this.unselectBGColorAndchecked(e)
+        } else if (eventTarget.nextSibling!.nextSibling !== null) {
+          this.setBGColorForNextSibling(e)
+          this.selectChildren(e)
+        } else if (
+      eventTarget.nextSibling!.nextSibling === null &&
+      currentElement!.style.backgroundColor !== 'rgb(59, 122, 231)'
+        ) {
+          this.setBGColorForNextSibling(e)
+          this.selectChildren(e)
+        }
+        this.arrowMove = 0
+        this.afterArrow = 1
+        this.first = 0
+      currentElement!.focus()
+      }
+    } else if (
+      e.key === 'ArrowUp' &&
+    e.shiftKey === true &&
+    (prevSiblingEvent !== null || nextSiblingEvent.previousSibling !== null)
+    ) {
+      this.first++
+      let currentElement: HTMLDivElement
+      if (prevSiblingEvent === null) {
+        currentElement = nextSiblingEvent.previousSibling! as HTMLDivElement
+      } else {
+        currentElement = prevSiblingEvent
+      }
+      if (this.properties.MultiSelect === 2 && currentElement !== null && eventTarget.previousSibling !== null) {
+        if (
+          eventTarget.style.backgroundColor === 'rgb(59, 122, 231)' &&
+        currentElement.style.backgroundColor !== ''
+        ) {
+          this.unselectBGColorAndchecked(e)
+        } else if (eventTarget.previousSibling!.previousSibling !== null) {
+          this.setBGColorForPreviousSibling(e)
+          this.selectChildren(e)
+        } else if (eventTarget.previousSibling!.previousSibling !== null) {
+          this.setBGColorForPreviousSibling(e)
+          this.selectChildren(e)
+        } else if (
+        eventTarget.previousSibling!.previousSibling === null &&
+        currentElement.style.backgroundColor !== 'rgb(59, 122, 231)'
+        ) {
+          this.setBGColorForPreviousSibling(e)
+          this.selectChildren(e)
+        }
+        this.arrowUp = true
+        if (this.first === 1) {
+          this.prevEle = currentElement
+        }
+        this.afterArrow = 1
+        currentElement.focus()
+      }
+    }
+    if (e.key === 'ArrowDown' && this.properties.MultiSelect === 2 && !e.shiftKey && (this.afterArrow === 1 || this.isDrag)) {
+      let currentElement: HTMLDivElement
+      if (nextSiblingEvent === null) {
+        currentElement = prevSiblingEvent.nextSibling! as HTMLDivElement
+      } else {
+        currentElement = nextSiblingEvent
+      }
+      if (this.isDrag) {
+        let c = this.lastDrag.nextSibling as HTMLDivElement
+        if (c !== null) {
+          currentElement = c
+        } else {
+          currentElement = this.lastDrag
+        }
+      }
+      this.first = 0
+      this.afterArrow = 0
+      this.clearOptionBGColorAndChecked(e)
+      if (currentElement !== null) {
+        currentElement.focus()
+      }
+      this.setBGandCheckedForMatch(currentElement)
+      this.selectChildren(e)
+    }
+    if (e.key === 'ArrowUp' && this.properties.MultiSelect === 2 && !e.shiftKey && (this.afterArrow === 1 || this.isDrag)) {
+      let currentElement: HTMLDivElement
+      if (prevSiblingEvent === null) {
+        currentElement = nextSiblingEvent.previousSibling! as HTMLDivElement
+      } else {
+        currentElement = prevSiblingEvent
+      }
+      if (this.isDrag) {
+        let c = this.lastDrag.previousSibling as HTMLDivElement
+        if (c !== null) {
+          currentElement = c
+        } else {
+          currentElement = this.lastDrag
+        }
+      }
+      this.first = 0
+      this.afterArrow = 0
+      this.clearOptionBGColorAndChecked(e)
+      if (currentElement !== null) {
+        currentElement.focus()
+      }
+      this.setBGandCheckedForMatch(currentElement)
+      this.selectChildren(e)
+    }
+    if (e.key === 'ArrowUp' && this.properties.MultiSelect === 2 && !e.shiftKey && this.afterArrow === 1) {
+      this.afterArrow = 0
+    }
+    if (e.key === 'PageUp' || e.key === 'PageDown') {
+      for (let point = 0; point < tempPath.length; point++) {
+        const element = tempPath[point] as HTMLDivElement
+        if (element.className === 'table-body') {
+          for (let index = 0; index < element.childNodes.length; index++) {
+            const pageUp = element.childNodes[0] as HTMLDivElement
+            const pageDown = element.childNodes[element.childNodes.length - 1] as HTMLDivElement
+            this.clearOptionBGColorAndChecked(e)
+            if (e.key === 'PageUp') {
+              this.setBGandCheckedForMatch(pageUp)
+            }
+            if (e.key === 'PageDown') {
+              this.setBGandCheckedForMatch(pageDown)
+            }
+          }
+          this.selectChildren(e)
           this.first = 0
           this.arrowMove = 1
           this.afterArrow = 1
@@ -1271,156 +1419,8 @@ handleExtendArrowKeySelect (e: KeyboardEvent) {
         }
       }
     }
+    this.isDrag = false
   }
-  if (
-    e.key === 'ArrowDown' &&
-    e.shiftKey === true &&
-    (nextSiblingEvent !== null || prevSiblingEvent.nextSibling !== null)
-  ) {
-    let currentElement: HTMLDivElement
-    if (nextSiblingEvent === null) {
-      currentElement = prevSiblingEvent.nextSibling! as HTMLDivElement
-    } else {
-      currentElement = nextSiblingEvent
-    }
-    if (this.properties.MultiSelect === 2 && eventTarget.nextSibling !== null) {
-      if (eventTarget.style.backgroundColor !== 'rgb(59, 122, 231)') {
-        this.setOptionBGColorAndChecked(e)
-        this.selectChildren(e)
-      } else if (
-        eventTarget.style.backgroundColor === 'rgb(59, 122, 231)' &&
-        currentElement!.style.backgroundColor !== ''
-      ) {
-        this.unselectBGColorAndchecked(e)
-      } else if (eventTarget.nextSibling!.nextSibling !== null) {
-        this.setBGColorForNextSibling(e)
-        this.selectChildren(e)
-      } else if (
-      eventTarget.nextSibling!.nextSibling === null &&
-      currentElement!.style.backgroundColor !== 'rgb(59, 122, 231)'
-      ) {
-        this.setBGColorForNextSibling(e)
-        this.selectChildren(e)
-      }
-      this.arrowMove = 0
-      this.afterArrow = 1
-      this.first = 0
-      currentElement!.focus()
-    }
-  } else if (
-    e.key === 'ArrowUp' &&
-    e.shiftKey === true &&
-    (prevSiblingEvent !== null || nextSiblingEvent.previousSibling !== null)
-  ) {
-    this.first++
-    let currentElement: HTMLDivElement
-    if (prevSiblingEvent === null) {
-      currentElement = nextSiblingEvent.previousSibling! as HTMLDivElement
-    } else {
-      currentElement = prevSiblingEvent
-    }
-    if (this.properties.MultiSelect === 2 && currentElement !== null && eventTarget.previousSibling !== null) {
-      if (
-        eventTarget.style.backgroundColor === 'rgb(59, 122, 231)' &&
-        currentElement.style.backgroundColor !== ''
-      ) {
-        this.unselectBGColorAndchecked(e)
-      } else if (eventTarget.previousSibling!.previousSibling !== null) {
-        this.setBGColorForPreviousSibling(e)
-        this.selectChildren(e)
-      } else if (eventTarget.previousSibling!.previousSibling !== null) {
-        this.setBGColorForPreviousSibling(e)
-        this.selectChildren(e)
-      } else if (
-        eventTarget.previousSibling!.previousSibling === null &&
-        currentElement.style.backgroundColor !== 'rgb(59, 122, 231)'
-      ) {
-        this.setBGColorForPreviousSibling(e)
-        this.selectChildren(e)
-      }
-      this.arrowUp = true
-      if (this.first === 1) {
-        this.prevEle = currentElement
-      }
-      this.afterArrow = 1
-      currentElement.focus()
-    }
-  }
-  if (e.key === 'ArrowDown' && this.properties.MultiSelect === 2 && !e.shiftKey && (this.afterArrow === 1 || this.isDrag)) {
-    let currentElement: HTMLDivElement
-    if (nextSiblingEvent === null) {
-      currentElement = prevSiblingEvent.nextSibling! as HTMLDivElement
-    } else {
-      currentElement = nextSiblingEvent
-    }
-    if (this.isDrag) {
-      let c = this.lastDrag.nextSibling as HTMLDivElement
-      if (c !== null) {
-        currentElement = c
-      } else {
-        currentElement = this.lastDrag
-      }
-    }
-    this.first = 0
-    this.afterArrow = 0
-    this.clearOptionBGColorAndChecked(e)
-    if (currentElement !== null) {
-      currentElement.focus()
-    }
-    this.setBGandCheckedForMatch(currentElement)
-    this.selectChildren(e)
-  }
-  if (e.key === 'ArrowUp' && this.properties.MultiSelect === 2 && !e.shiftKey && (this.afterArrow === 1 || this.isDrag)) {
-    let currentElement: HTMLDivElement
-    if (prevSiblingEvent === null) {
-      currentElement = nextSiblingEvent.previousSibling! as HTMLDivElement
-    } else {
-      currentElement = prevSiblingEvent
-    }
-    if (this.isDrag) {
-      let c = this.lastDrag.previousSibling as HTMLDivElement
-      if (c !== null) {
-        currentElement = c
-      } else {
-        currentElement = this.lastDrag
-      }
-    }
-    this.first = 0
-    this.afterArrow = 0
-    this.clearOptionBGColorAndChecked(e)
-    if (currentElement !== null) {
-      currentElement.focus()
-    }
-    this.setBGandCheckedForMatch(currentElement)
-    this.selectChildren(e)
-  }
-  if (e.key === 'ArrowUp' && this.properties.MultiSelect === 2 && !e.shiftKey && this.afterArrow === 1) {
-    this.afterArrow = 0
-  }
-  if (e.key === 'PageUp' || e.key === 'PageDown') {
-    for (let point = 0; point < tempPath.length; point++) {
-      const element = tempPath[point] as HTMLDivElement
-      if (element.className === 'table-body') {
-        for (let index = 0; index < element.childNodes.length; index++) {
-          const pageUp = element.childNodes[0] as HTMLDivElement
-          const pageDown = element.childNodes[element.childNodes.length - 1] as HTMLDivElement
-          this.clearOptionBGColorAndChecked(e)
-          if (e.key === 'PageUp') {
-            this.setBGandCheckedForMatch(pageUp)
-          }
-          if (e.key === 'PageDown') {
-            this.setBGandCheckedForMatch(pageDown)
-          }
-        }
-        this.selectChildren(e)
-        this.first = 0
-        this.arrowMove = 1
-        this.afterArrow = 1
-        break
-      }
-    }
-  }
-  this.isDrag = false
 }
 
 selectChildren (e: KeyboardEvent) {
@@ -1456,96 +1456,102 @@ handleDrag (e: any) {
   let startPoint = 0
   let endPoint = 0
   const tNode = etarget.parentElement as HTMLDivElement
-  if (this.properties.MultiSelect === 2) {
-    if (e.which === 1) {
-      if (this.startNode.className === 'tr') {
-        startPoint = this.startNode.tabIndex
-      } else {
-        if (this.startNode !== undefined) {
-          const pNode = this.startNode.parentElement as HTMLDivElement
-          startPoint = pNode.tabIndex
+  if ((this.isRunMode && !this.properties.Locked && this.properties.Enabled) || !this.isRunMode) {
+    if (this.properties.MultiSelect === 2) {
+      if (e.which === 1) {
+        if (this.startNode.className === 'tr') {
+          startPoint = this.startNode.tabIndex
+        } else {
+          if (this.startNode !== undefined) {
+            const pNode = this.startNode.parentElement as HTMLDivElement
+            startPoint = pNode.tabIndex
+          }
+        }
+        if (etarget.className === 'tr') {
+          endPoint = etarget.tabIndex
+        } else {
+          endPoint = tNode.tabIndex
+        }
+        if (startPoint > endPoint) {
+          let temp = startPoint
+          startPoint = endPoint
+          endPoint = temp
+        }
+        this.clearOptionBGColorAndChecked(e)
+        this.selectOnHover(startPoint, endPoint, tempPath)
+        this.selectChildren(e)
+        this.lastDrag = etarget
+        this.isDrag = true
+      }
+    } else if (this.properties.MultiSelect === 0) {
+      if (e.which === 1) {
+        if (etarget.className === 'tr') {
+          startPoint = endPoint = etarget.tabIndex
+        } else {
+          startPoint = endPoint = tNode.tabIndex
+        }
+        this.clearOptionBGColorAndChecked(e)
+        this.selectOnHover(startPoint, endPoint, tempPath)
+        this.selectChildren(e)
+      }
+    } else if (this.properties.MultiSelect === 1) {
+      if (e.which === 1) {
+        if (etarget.className === 'tr') {
+          startPoint = endPoint = etarget.tabIndex
+        } else {
+          startPoint = endPoint = tNode.tabIndex
+        }
+        this.clearOptionBGColorAndChecked(e)
+        this.selectedItems.forEach((ele, index) => {
+          this.selectOnHover(ele, ele, tempPath)
+          this.selectChildren(e)
+        })
+        if (etarget.style.backgroundColor === 'rgb(59, 122, 231)' || tNode.style.backgroundColor === 'rgb(59, 122, 231') {
+          this.unselectBGColorAndchecked(e)
+        } else {
+          this.setOptionBGColorAndChecked(e)
+          this.selectChildren(e)
         }
       }
-      if (etarget.className === 'tr') {
-        endPoint = etarget.tabIndex
-      } else {
-        endPoint = tNode.tabIndex
-      }
-      if (startPoint > endPoint) {
-        let temp = startPoint
-        startPoint = endPoint
-        endPoint = temp
-      }
-      this.clearOptionBGColorAndChecked(e)
-      this.selectOnHover(startPoint, endPoint, tempPath)
-      this.selectChildren(e)
-      this.lastDrag = etarget
-      this.isDrag = true
     }
-  } else if (this.properties.MultiSelect === 0) {
-    if (e.which === 1) {
-      if (etarget.className === 'tr') {
-        startPoint = endPoint = etarget.tabIndex
-      } else {
-        startPoint = endPoint = tNode.tabIndex
-      }
-      this.clearOptionBGColorAndChecked(e)
-      this.selectOnHover(startPoint, endPoint, tempPath)
-      this.selectChildren(e)
-    }
-  } else if (this.properties.MultiSelect === 1) {
-    if (e.which === 1) {
-      if (etarget.className === 'tr') {
-        startPoint = endPoint = etarget.tabIndex
-      } else {
-        startPoint = endPoint = tNode.tabIndex
-      }
-      this.clearOptionBGColorAndChecked(e)
-      this.selectedItems.forEach((ele, index) => {
-        this.selectOnHover(ele, ele, tempPath)
-        this.selectChildren(e)
-      })
-      if (etarget.style.backgroundColor === 'rgb(59, 122, 231)' || tNode.style.backgroundColor === 'rgb(59, 122, 231') {
-        this.unselectBGColorAndchecked(e)
-      } else {
-        this.setOptionBGColorAndChecked(e)
-        this.selectChildren(e)
-      }
-    }
+    window.getSelection()!.removeAllRanges()
   }
-  window.getSelection()!.removeAllRanges()
 }
 
 captureTarget (e: any) {
-  const eveTarget = e.target as HTMLDivElement
-  this.startNode = eveTarget
+  if ((this.isRunMode && !this.properties.Locked && this.properties.Enabled) || !this.isRunMode) {
+    const eveTarget = e.target as HTMLDivElement
+    this.startNode = eveTarget
+  }
 }
 
 handleSelected (e: any) {
-  const eveTarget = e.target as HTMLDivElement
-  const tempPath = e.composedPath()
-  const tNode = eveTarget.parentElement as HTMLDivElement
-  let key = 0
-  if (eveTarget.tagName === 'tr') {
-    key = eveTarget.tabIndex
-  } else {
-    key = tNode.tabIndex
-  }
-  if (this.properties.MultiSelect === 1) {
-    if (eveTarget.style.backgroundColor === 'rgb(59, 122, 231)') {
-      if (!this.selectedItems.includes(key)) {
-        this.selectedItems.push(key)
-      }
-    } else if (this.selectedItems.includes(key)) {
-      const index = this.selectedItems.indexOf(key)
-      this.selectedItems.splice(index, 1)
+  if ((this.isRunMode && !this.properties.Locked && this.properties.Enabled) || !this.isRunMode) {
+    const eveTarget = e.target as HTMLDivElement
+    const tempPath = e.composedPath()
+    const tNode = eveTarget.parentElement as HTMLDivElement
+    let key = 0
+    if (eveTarget.tagName === 'tr') {
+      key = eveTarget.tabIndex
+    } else {
+      key = tNode.tabIndex
     }
-    this.selectedItems.forEach((ele, index) => {
-      if (index !== this.selectedItems.length - 1) {
-        this.selectOnHover(ele, ele, tempPath)
-        this.selectChildren(e)
+    if (this.properties.MultiSelect === 1) {
+      if (eveTarget.style.backgroundColor === 'rgb(59, 122, 231)') {
+        if (!this.selectedItems.includes(key)) {
+          this.selectedItems.push(key)
+        }
+      } else if (this.selectedItems.includes(key)) {
+        const index = this.selectedItems.indexOf(key)
+        this.selectedItems.splice(index, 1)
       }
-    })
+      this.selectedItems.forEach((ele, index) => {
+        if (index !== this.selectedItems.length - 1) {
+          this.selectOnHover(ele, ele, tempPath)
+          this.selectChildren(e)
+        }
+      })
+    }
   }
 }
 
@@ -1581,7 +1587,7 @@ setBGColorForNextSibling (e: MouseEvent | KeyboardEvent) {
      : 'rgb(59, 122, 231)'
     nextSiblingEvent.style.color =
    nextSiblingEvent.style.color === 'white'
-     ? 'black'
+     ? ''
      : 'white'
     if (
       this.properties.ListStyle === 1 &&
@@ -1608,7 +1614,7 @@ setBGColorForPreviousSibling (e: KeyboardEvent) {
      : 'rgb(59, 122, 231)'
     prevSiblingEvent.style.color =
    prevSiblingEvent.style.color === 'white'
-     ? 'black'
+     ? ''
      : 'white'
     if (
       this.properties.ListStyle === 1 &&
@@ -1630,7 +1636,7 @@ clearOptionBGColorAndChecked (e: any) {
       if (e.path[i].className === 'tBodyStyle') {
         for (let j = 0; j < e.path[i].children.length; j++) {
           e.path[i].children[j].style.backgroundColor = ''
-          e.path[i].children[j].style.color = 'black'
+          e.path[i].children[j].style.color = ''
         }
       }
     }
@@ -1647,11 +1653,11 @@ clearOptionBGColorAndChecked (e: any) {
         ) {
           const childNode = element.childNodes[childIndex] as HTMLDivElement
           childNode.style.backgroundColor = ''
-          childNode.style.color = 'black'
+          childNode.style.color = ''
           for (let i = 0; i < childNode.children.length; i++) {
             const a = childNode.children[i] as HTMLDivElement
             a.style.backgroundColor = ''
-            a.style.color = 'black'
+            a.style.color = ''
           }
           const ChildChecked = childNode.childNodes[0].childNodes[0] as HTMLInputElement
           if (ChildChecked && this.properties.ListStyle === 1) {
@@ -1679,7 +1685,7 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
      : 'rgb(59, 122, 231)'
     currentTargetElement.style.color =
    currentTargetElement.style.color === 'white'
-     ? 'black'
+     ? ''
      : 'white'
   }
   if (this.data.type === 'ComboBox') {
@@ -1689,7 +1695,7 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
     const targetEvent = e.target
     if (this.data.type === 'ComboBox') {
       currentTargetElement.style.backgroundColor = ''
-      currentTargetElement.style.color = 'black'
+      currentTargetElement.style.color = ''
     }
     if (
       this.properties.ListStyle === 1 &&
@@ -1701,7 +1707,7 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
         currentTargetElement.style.color = 'white'
       } else {
         currentTargetElement.style.backgroundColor = ''
-        currentTargetElement.style.color = 'black'
+        currentTargetElement.style.color = ''
       }
     } else {
       childNodeChecked.checked = !childNodeChecked.checked
@@ -1717,14 +1723,14 @@ setOptionBGColorAndChecked (e: KeyboardEvent | MouseEvent) {
       } else if (this.properties.MultiSelect === 1) {
         if (currentTargetElement.style.backgroundColor === 'rgb(59, 122, 231)') {
           currentTargetElement.style.backgroundColor = ''
-          currentTargetElement.style.color = 'black'
+          currentTargetElement.style.color = ''
           if (this.properties.ListStyle === 1) {
             if (childNodeChecked.checked) {
               currentTargetElement.style.backgroundColor = 'rgb(59, 122, 231)'
               currentTargetElement.style.color = 'white'
             } else {
               currentTargetElement.style.backgroundColor = ''
-              currentTargetElement.style.color = 'black'
+              currentTargetElement.style.color = ''
             }
           }
         } else {
@@ -1752,11 +1758,11 @@ unselectBGColorAndchecked (e: KeyboardEvent | MouseEvent) {
   if (this.properties.MultiSelect === 2 || this.properties.MultiSelect === 1) {
     childNodeChecked.checked = false
     currentTargetElement.style.backgroundColor = ''
-    currentTargetElement.style.color = 'black'
+    currentTargetElement.style.color = ''
     for (let i = 1; i < currentTargetElement.childNodes.length; i++) {
       const childEle = currentTargetElement.childNodes[i] as HTMLDivElement
       childEle.style.backgroundColor = ''
-      childEle.style.color = 'black'
+      childEle.style.color = ''
     }
   }
 }
@@ -2094,7 +2100,7 @@ setCaretPosition () {
     }
   })
 }
-updateMouseCursor () {
+updateMouseCursor (event: MouseEvent) {
   const controlProp = this.properties
   if (this.toolBoxSelect !== 'Select') {
     this.controlCursor = 'crosshair !important'
@@ -2105,7 +2111,11 @@ updateMouseCursor () {
       }
     })
   } else {
-    if (controlProp.MousePointer !== 0 || controlProp.MouseIcon !== '') {
+    if (this.data.type === 'TextBox' && this.isEditMode) {
+      if (this.properties.SelectionMargin && event.offsetX < 11) {
+        return undefined
+      }
+    } else if (controlProp.MousePointer !== 0 || controlProp.MouseIcon !== '') {
       this.controlCursor = this.getMouseCursorData
     } else if (controlProp.MousePointer === 0) {
       EventBus.$emit('getMouseCursor', this.properties.ID, (pointer: string) => {
